@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System design & API gateway · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="system-design">
+<main>
+  <div class="eyebrow">Build · 02</div>
+  <h1>System design for AI PMs: the parts you must name</h1>
+  <p class="lede">You won't be asked to shard a database. You will be asked "how would this scale?", "where does the LLM call live?" and "what happens when it fails?". Here are the building blocks, the API gateway in depth, the LLM-specific layer, and a 6-step answer structure.</p>
+  <div class="toc" data-auto></div>
+
+  <h2 id="ref">Reference architecture for an AI product</h2>
+  <div class="widget">
+  <svg viewBox="0 0 900 430" style="width:100%;height:auto" font-family="Inter, sans-serif" font-size="12.5" aria-label="Reference architecture">
+    <defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8a85a0"/></marker></defs>
+    <g stroke="#8a85a0" stroke-width="1.5" fill="none" marker-end="url(#a)">
+      <path d="M95 200 H140"/><path d="M240 200 H285"/><path d="M395 200 H430"/>
+      <path d="M545 180 L600 95"/><path d="M545 200 H600"/><path d="M545 220 L600 305"/>
+      <path d="M710 95 H748"/><path d="M710 200 H748"/><path d="M710 305 H748"/>
+      <path d="M655 230 V275"/>
+    </g>
+    <g>
+      <rect x="10" y="170" width="85" height="60" rx="10" fill="#ece8ff" stroke="#5b3df5"/><text x="52" y="197" text-anchor="middle" font-weight="700">Client</text><text x="52" y="214" text-anchor="middle" fill="#5d5b66">web · mobile</text>
+      <rect x="140" y="170" width="100" height="60" rx="10" fill="#fff" stroke="#c9c4d6"/><text x="190" y="197" text-anchor="middle" font-weight="700">CDN</text><text x="190" y="214" text-anchor="middle" fill="#5d5b66">static, cache</text>
+      <rect x="285" y="150" width="110" height="100" rx="10" fill="#ffe9df" stroke="#ff5a1f"/><text x="340" y="185" text-anchor="middle" font-weight="700">API Gateway</text><text x="340" y="203" text-anchor="middle" fill="#5d5b66">auth · rate limit</text><text x="340" y="219" text-anchor="middle" fill="#5d5b66">routing · logs</text>
+      <rect x="430" y="150" width="115" height="100" rx="10" fill="#fff" stroke="#c9c4d6"/><text x="487" y="185" text-anchor="middle" font-weight="700">App services</text><text x="487" y="203" text-anchor="middle" fill="#5d5b66">business logic</text><text x="487" y="219" text-anchor="middle" fill="#5d5b66">(stateless)</text>
+      <rect x="600" y="65" width="110" height="60" rx="10" fill="#fff" stroke="#c9c4d6"/><text x="655" y="91" text-anchor="middle" font-weight="700">Cache</text><text x="655" y="108" text-anchor="middle" fill="#5d5b66">Redis</text>
+      <rect x="600" y="170" width="110" height="60" rx="10" fill="#ddf4ea" stroke="#0f8a5f"/><text x="655" y="196" text-anchor="middle" font-weight="700">Database</text><text x="655" y="213" text-anchor="middle" fill="#5d5b66">Postgres + pgvector</text>
+      <rect x="600" y="275" width="110" height="60" rx="10" fill="#fff" stroke="#c9c4d6"/><text x="655" y="301" text-anchor="middle" font-weight="700">Queue</text><text x="655" y="318" text-anchor="middle" fill="#5d5b66">async jobs</text>
+      <rect x="748" y="50" width="140" height="90" rx="10" fill="#ece8ff" stroke="#5b3df5"/><text x="818" y="80" text-anchor="middle" font-weight="700">LLM gateway</text><text x="818" y="98" text-anchor="middle" fill="#5d5b66">routing · fallback</text><text x="818" y="114" text-anchor="middle" fill="#5d5b66">cache · cost · guardrails</text>
+      <rect x="748" y="170" width="140" height="60" rx="10" fill="#fff" stroke="#c9c4d6"/><text x="818" y="196" text-anchor="middle" font-weight="700">Object storage</text><text x="818" y="213" text-anchor="middle" fill="#5d5b66">files, images</text>
+      <rect x="748" y="275" width="140" height="60" rx="10" fill="#fff" stroke="#c9c4d6"/><text x="818" y="301" text-anchor="middle" font-weight="700">Workers</text><text x="818" y="318" text-anchor="middle" fill="#5d5b66">embeddings, agents</text>
+      <rect x="285" y="320" width="260" height="70" rx="10" fill="#fdf1d8" stroke="#b7791f"/><text x="415" y="348" text-anchor="middle" font-weight="700">Observability</text><text x="415" y="366" text-anchor="middle" fill="#5d5b66">logs · metrics · traces · LLM evals · analytics</text>
+    </g>
+  </svg>
+  </div>
+  <p>Read it left to right in an interview: <i>client → CDN → gateway (auth, rate limits) → stateless services → cache / database / queue → LLM gateway and workers, with observability across everything.</i></p>
+
+  <h2 id="blocks">The 15 building blocks</h2>
+  <input type="search" data-filter="#blocks-t" placeholder="Filter: cache, queue, auth…">
+  <div class="table-wrap"><table id="blocks-t">
+    <thead><tr><th>Block</th><th>What it does</th><th>Use it when / the one-liner</th></tr></thead><tbody>
+    <tr data-row><td><b>Client–server, stateless services</b></td><td>Servers keep no per-user memory between requests; state lives in DB/cache.</td><td>"Stateless app servers so we can add more behind a load balancer."</td></tr>
+    <tr data-row><td><b>Load balancer</b></td><td>Spreads traffic across instances, health-checks them.</td><td>Any time you have &gt;1 instance. Managed hosts do it for you.</td></tr>
+    <tr data-row><td><b>CDN</b></td><td>Serves static files and cached pages from the edge.</td><td>Global users, images, the frontend bundle.</td></tr>
+    <tr data-row><td><b>API gateway</b></td><td>Single entry point: auth, rate limiting, routing, transformation, logging.</td><td>Multiple services, public API, mobile + web clients. See below.</td></tr>
+    <tr data-row><td><b>Cache (Redis)</b></td><td>In-memory key-value for hot reads, sessions, rate-limit counters.</td><td>Repeated reads; expensive LLM answers to identical prompts. Mention TTL and invalidation.</td></tr>
+    <tr data-row><td><b>Relational DB</b></td><td>Tables, joins, transactions (ACID).</td><td>Default for product data. Add indexes for your main queries.</td></tr>
+    <tr data-row><td><b>Read replicas / sharding</b></td><td>Replicas scale reads; sharding splits data across machines.</td><td>Replicas first. Sharding is a "much later" answer.</td></tr>
+    <tr data-row><td><b>Queue / message broker</b></td><td>Decouples producers from workers; retries; smooths spikes.</td><td>Emails, embeddings, report generation, agent runs, anything &gt;2s.</td></tr>
+    <tr data-row><td><b>Pub/sub & webhooks</b></td><td>Event fan-out inside the system; webhooks notify other systems.</td><td>"When a payment succeeds, Stripe calls our webhook; we verify its signature."</td></tr>
+    <tr data-row><td><b>Object storage</b></td><td>S3-style blobs with signed URLs.</td><td>Uploads, images, audio, exports. Never store files in the DB.</td></tr>
+    <tr data-row><td><b>Search index</b></td><td>Full-text and faceted search (Postgres FTS, Elastic, Typesense).</td><td>Product catalogs, help centers; hybrid with vectors for RAG.</td></tr>
+    <tr data-row><td><b>Auth (OAuth/OIDC, JWT, sessions)</b></td><td>Who the user is; tokens carry identity; RLS/authorization checks what they can touch.</td><td>"Short-lived JWTs, server-side authorization, row-level security in Postgres."</td></tr>
+    <tr data-row><td><b>Rate limiting</b></td><td>Caps requests per user/IP/key (token bucket).</td><td>Every AI and auth endpoint. Protects cost and abuse.</td></tr>
+    <tr data-row><td><b>Idempotency & retries</b></td><td>Safe retries with backoff; idempotency keys prevent duplicates.</td><td>Payments, order creation, webhooks, agent tool calls.</td></tr>
+    <tr data-row><td><b>Observability</b></td><td>Logs, metrics, traces, alerts; product analytics.</td><td>"We'd alert on p95 latency, error rate and cost per user."</td></tr>
+    </tbody></table></div>
+
+  <h2 id="gateway">The API gateway in depth</h2>
+  <p>An API gateway is the front door for your backend: every client request goes through it before reaching a service. It centralises cross-cutting concerns so each service doesn't reimplement them.</p>
+  <div class="grid">
+    <div class="card"><h4>Authentication</h4><p>Validates API keys / JWTs once, passes user identity downstream.</p></div>
+    <div class="card"><h4>Rate limiting & quotas</h4><p>Per user, key or plan tier: "free = 50 AI calls/day".</p></div>
+    <div class="card"><h4>Routing & versioning</h4><p><code>/v1/orders</code> → orders service; canary 5% to v2.</p></div>
+    <div class="card"><h4>Aggregation (BFF)</h4><p>One mobile call fans out to 3 services and merges results.</p></div>
+    <div class="card"><h4>Transformation</h4><p>Protocol translation (REST ↔ gRPC), request/response shaping.</p></div>
+    <div class="card"><h4>Caching, logging, CORS, TLS</h4><p>Edge caching of GETs, access logs, TLS termination, CORS policy.</p></div>
+  </div>
+  <div class="table-wrap"><table>
+    <tr><th>Option</th><th>Typical choice</th></tr>
+    <tr><td>Managed cloud</td><td>AWS API Gateway, Google Apigee / API Gateway, Azure API Management</td></tr>
+    <tr><td>Open source / self-host</td><td>Kong, Tyk, KrakenD, Envoy, NGINX</td></tr>
+    <tr><td>Edge / platform</td><td>Cloudflare (Workers + API Shield), Vercel middleware for simple cases</td></tr>
+    <tr><td>For LLM traffic</td><td>An <b>LLM/AI gateway</b>: LiteLLM, Portkey, Cloudflare AI Gateway, OpenRouter</td></tr>
+  </table></div>
+  <div class="callout pm"><div class="tag">Gateway vs load balancer vs service mesh</div><p><b>Load balancer</b> spreads traffic across copies of one service. <b>API gateway</b> is the smart front door for clients (auth, limits, routing to many services). <b>Service mesh</b> (Istio, Linkerd) handles service-to-service traffic inside the cluster. For an MVP, your framework's API routes + middleware are your gateway; name the real thing when you talk about scale.</p></div>
+
+  <h2 id="comm">How services talk</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Pattern</th><th>Use for</th></tr>
+    <tr><td>REST (JSON over HTTP)</td><td>Default public and internal APIs.</td></tr>
+    <tr><td>GraphQL</td><td>Many clients needing different shapes of the same data.</td></tr>
+    <tr><td>gRPC</td><td>Fast internal service-to-service calls.</td></tr>
+    <tr><td>Server-Sent Events (SSE)</td><td>Streaming LLM tokens to the browser (one-way).</td></tr>
+    <tr><td>WebSockets</td><td>Two-way real time: chat, collaboration, live voice agents.</td></tr>
+    <tr><td>Webhooks</td><td>Third parties notifying you (Stripe, GitHub). Verify signatures; make handlers idempotent.</td></tr>
+    <tr><td>Queues / events</td><td>Async work and decoupled services.</td></tr>
+  </table></div>
+
+  <h2 id="llm">The LLM layer: what's different about AI systems</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Concern</th><th>Pattern</th></tr>
+    <tr><td>Latency (seconds, not ms)</td><td>Stream tokens; show progress; precompute (daily suggestions overnight); async jobs for long agent runs.</td></tr>
+    <tr><td>Cost</td><td>Model routing (small model first, escalate hard cases), prompt caching, response caching for identical inputs, max_tokens caps, per-user budgets.</td></tr>
+    <tr><td>Reliability</td><td>Timeouts, retries with backoff, fallback model/provider, non-AI fallback response.</td></tr>
+    <tr><td>Correctness</td><td>Structured output + schema validation; RAG with citations; evals in CI; human review for high stakes.</td></tr>
+    <tr><td>Safety</td><td>Input/output filters, prompt-injection defences, tool permissions, PII redaction.</td></tr>
+    <tr><td>Knowledge</td><td>RAG: chunk → embed → store (pgvector) → retrieve (hybrid + rerank) → generate with citations.</td></tr>
+    <tr><td>Memory</td><td>Short-term (conversation), long-term (user profile/facts in DB), episodic (past interactions, summarised).</td></tr>
+    <tr><td>Observability</td><td>Trace every call: prompt version, model, tokens, latency, cost, user feedback (Langfuse, LangSmith).</td></tr>
+    <tr><td>Quality over time</td><td>Eval set + online signals (thumbs, edits, accept rate) + regression tests when prompts or models change.</td></tr>
+  </table></div>
+  <h3>RAG in one diagram</h3>
+  <div class="flow"><div class="node">Docs</div><span class="arrow">→</span><div class="node">Chunk<small>~300–800 tokens, overlap</small></div><span class="arrow">→</span><div class="node">Embed</div><span class="arrow">→</span><div class="node hl">Vector store<small>+ metadata</small></div><span class="arrow">→</span><div class="node">Retrieve<small>hybrid + filters</small></div><span class="arrow">→</span><div class="node">Rerank</div><span class="arrow">→</span><div class="node hl">LLM + citations</div></div>
+  <p>Most RAG quality problems are chunking, metadata filters and reranking, not the choice of vector database.</p>
+
+  <h2 id="answer">The 6-step system design answer</h2>
+  <ol>
+    <li><b>Requirements:</b> functional (what it does) and non-functional (latency, scale, availability, privacy, cost).</li>
+    <li><b>Estimates:</b> users, requests/sec, data size, LLM calls/day × cost per call.</li>
+    <li><b>API:</b> 3–5 key endpoints.</li>
+    <li><b>Data model:</b> main tables and how they're queried.</li>
+    <li><b>High-level design:</b> draw the reference architecture above, adapted.</li>
+    <li><b>Deep dives & trade-offs:</b> the bottleneck (usually the LLM: cost/latency), failure modes, privacy, how you'd measure success.</li>
+  </ol>
+  <h3>Back-of-envelope cheats</h3>
+  <ul>
+    <li>1M daily users × 10 requests ≈ 10M/day ≈ ~115 req/s average; plan for 3–5× at peak.</li>
+    <li>1 day ≈ 86,400 s (call it 100k). 1M rows × 1 KB = 1 GB.</li>
+    <li>LLM cost/day = calls × (input tokens × input price + output tokens × output price). Then ask: can we cache, batch, precompute or use a smaller model?</li>
+  </ul>
+
+  <h2 id="cap">Trade-offs to name</h2>
+  <div class="grid two">
+    <div class="card"><h4>Consistency vs availability</h4><p>Payments need strong consistency; a feed can be eventually consistent.</p></div>
+    <div class="card"><h4>Sync vs async</h4><p>Sync is simpler; async survives spikes and slow LLMs.</p></div>
+    <div class="card"><h4>Build vs buy</h4><p>Auth, payments, search, LLM gateway: buy for an MVP.</p></div>
+    <div class="card"><h4>Monolith vs microservices</h4><p>Start with a modular monolith; split when teams or scaling demand it.</p></div>
+    <div class="card"><h4>Big model vs small model</h4><p>Quality vs cost and latency; route by difficulty.</p></div>
+    <div class="card"><h4>Precompute vs on-demand</h4><p>Daily suggestions overnight = cheap and instant; chat = on-demand.</p></div>
+  </div>
+</main>
+</body>
+</html>

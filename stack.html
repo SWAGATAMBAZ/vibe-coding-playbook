@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frontend, backend & deploy · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="stack">
+<main>
+  <div class="eyebrow">Build · 01</div>
+  <h1>Frontend, backend & deploy: one default stack</h1>
+  <p class="lede">AI coding tools are best at the stacks they've seen most. Pick one boring, popular default so you never spend interview minutes on setup, and know exactly when to swap a piece.</p>
+  <div class="toc" data-auto></div>
+
+  <h2 id="default">The default stack</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Layer</th><th>Default</th><th>Why</th><th>Swap when…</th></tr>
+    <tr><td>Framework</td><td><b>Next.js (App Router) + TypeScript</b></td><td>Frontend + API routes in one repo, huge training data, deploys in one click.</td><td>Pure SPA with separate API → Vite + React. Content site → Astro.</td></tr>
+    <tr><td>Styling / UI</td><td><b>Tailwind + shadcn/ui</b></td><td>Accessible components you own as code; the AI knows them well; shadcn MCP installs them.</td><td>Design system exists → use it (Figma MCP + Code Connect).</td></tr>
+    <tr><td>Database</td><td><b>Postgres via Supabase</b></td><td>Relational + JSON + vectors (pgvector) + full-text in one DB.</td><td>See <a href="databases.html">database chooser</a>.</td></tr>
+    <tr><td>Auth</td><td><b>Supabase Auth</b> (or Clerk)</td><td>Email/OAuth in minutes; ties into row-level security.</td><td>Enterprise SSO → Clerk / Auth0 / WorkOS.</td></tr>
+    <tr><td>Backend logic</td><td><b>Route handlers / server actions</b></td><td>No extra service for an MVP.</td><td>Heavy ML/Python, agents, long jobs → <b>FastAPI</b> service.</td></tr>
+    <tr><td>AI SDK</td><td><b>Vercel AI SDK</b> or the <b>Anthropic / OpenAI SDK</b></td><td>Streaming, tool calls, structured output with zod.</td><td>Complex agents → LangGraph / Claude Agent SDK (<a href="agents.html">agents page</a>).</td></tr>
+    <tr><td>Validation</td><td><b>zod</b> (TS) / <b>pydantic</b> (Python)</td><td>Validate user input and LLM output at every boundary.</td><td>—</td></tr>
+    <tr><td>Background jobs</td><td><b>Inngest / Trigger.dev</b> or a queue</td><td>Retries, schedules, long AI jobs outside a request.</td><td>Simple cron → Vercel Cron / Supabase pg_cron.</td></tr>
+    <tr><td>Files</td><td><b>Supabase Storage</b> / S3 / R2</td><td>Signed URLs, per-user policies.</td><td>—</td></tr>
+    <tr><td>Hosting</td><td><b>Vercel</b> (frontend + API), <b>Railway/Render/Fly</b> (Python, workers)</td><td>Preview URL per branch; easy env vars.</td><td>Enterprise cloud → AWS/GCP/Azure.</td></tr>
+    <tr><td>Observability</td><td><b>Sentry</b> + <b>PostHog</b>; <b>Langfuse/LangSmith</b> for LLM traces</td><td>Errors, product analytics, prompt/latency/cost tracing.</td><td>—</td></tr>
+  </table></div>
+  <div class="callout interview"><div class="tag">🎯 Say it like this</div><p>"I'll use Next.js with Tailwind and shadcn for speed, Supabase for Postgres, auth and row-level security, and keep every LLM call server-side with validated JSON output. It's the stack an engineer can take over on day one."</p></div>
+
+  <h2 id="tree">Project structure the AI won't get lost in</h2>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="my-app/">
+    app/
+      (marketing)/page.tsx          # landing
+      (app)/today/page.tsx          # main screen (server component)
+      (app)/history/page.tsx
+      api/suggest/route.ts          # server-only AI endpoint
+    components/                     # UI (shadcn in components/ui)
+    lib/
+      server/ai.ts                  # LLM client, prompts, zod schemas, fallback
+      server/db.ts                  # Supabase server client
+      track.ts                      # analytics helper
+    supabase/migrations/            # SQL migrations (schema + RLS)
+    specs/spec.md  tasks.md         # the spec-driven source of truth
+    tests/  e2e/                    # unit + Playwright
+    CLAUDE.md  .env.example  README.md
+  </script>
+
+  <h2 id="frontend">Frontend essentials for PMs</h2>
+  <ul>
+    <li><b>Server vs client components:</b> fetch data and call secrets on the server; use client components only for interactivity (<code>"use client"</code>).</li>
+    <li><b>Every screen has four states:</b> empty, loading, error, success. Ask for all four explicitly.</li>
+    <li><b>Responsive and accessible:</b> labels, keyboard focus, contrast, 375px width. The <code>web-design-guidelines</code> skill audits this.</li>
+    <li><b>Optimistic UI</b> for fast-feeling actions (log a habit), with rollback on error.</li>
+    <li><b>Streaming</b> for long AI responses, so users see progress in under a second.</li>
+    <li><b>Avoid the "AI look":</b> one accent colour, real hierarchy, no random gradients. The <code>frontend-design</code> skill helps.</li>
+  </ul>
+
+  <h2 id="backend">Backend essentials</h2>
+  <ul>
+    <li><b>API design:</b> REST with nouns (<code>GET /api/checkins</code>, <code>POST /api/checkins</code>), proper status codes, pagination, input validation, consistent error shape.</li>
+    <li><b>Auth vs authorization:</b> who are you vs what can you touch. Enforce authorization on the server (and RLS in the DB), never only in the UI.</li>
+    <li><b>Idempotency:</b> a retried "pay" or "create" request must not double-charge or duplicate. Use idempotency keys.</li>
+    <li><b>Long work goes async:</b> queue it, return 202, notify on completion.</li>
+    <li><b>Secrets:</b> env vars on the server; <code>.env.example</code> in git; <code>.env</code> never.</li>
+  </ul>
+
+  <h2 id="ai-call">The safe LLM call pattern</h2>
+  <script type="text/plain" class="snippet" data-lang="ts" data-title="app/api/suggest/route.ts">
+    import Anthropic from "@anthropic-ai/sdk";
+    import { z } from "zod";
+
+    const Suggestion = z.object({ title: z.string().max(80), why: z.string().max(140), habit: z.string() });
+    const client = new Anthropic();                       // reads ANTHROPIC_API_KEY on the server only
+    const FALLBACK = { title: "Take a 5-minute walk", why: "Short walks lift energy for most people.", habit: "walk" };
+
+    export async function POST(req: Request) {
+      const user = await requireUser(req);                 // auth first (your helper)
+      if (!(await rateLimit(user.id))) return Response.json({ error: "Slow down" }, { status: 429 });
+      const stats = await getUserStats(user.id);          // aggregates only, no names or raw notes
+
+      try {
+        const msg = await client.messages.create({
+          model: process.env.AI_MODEL!,                    // configurable; cheap model for simple tasks
+          max_tokens: 300,
+          system: "You suggest ONE tiny habit tweak. Use only the stats given. Reply as JSON {title, why, habit}.",
+          messages: [{ role: "user", content: JSON.stringify(stats) }],
+        }, { timeout: 10_000 });
+        const text = msg.content[0].type === "text" ? msg.content[0].text : "";
+        const parsed = Suggestion.safeParse(JSON.parse(text));
+        return Response.json(parsed.success ? parsed.data : FALLBACK);
+      } catch (e) {
+        console.error("suggest_failed", e);                // + Sentry in production
+        return Response.json(FALLBACK);                    // the product still works when the AI doesn't
+      }
+    }
+  </script>
+  <p>Six things an interviewer looks for: server-side key, auth, rate limit, minimal data to the model, validated structured output, and a fallback.</p>
+
+  <h2 id="deploy">Deploy in five minutes</h2>
+  <ol>
+    <li>Push to GitHub (<code>/ship</code> opens the PR).</li>
+    <li>Import the repo in Vercel (or ask Claude to use the Vercel MCP/CLI). Add env vars from <code>.env.example</code>.</li>
+    <li>Every branch gets a preview URL. Share it in the interview chat or your take-home README.</li>
+    <li>Python service or worker? Railway / Render / Fly from a Dockerfile.</li>
+    <li>Static site (like this one)? GitHub Pages.</li>
+  </ol>
+
+  <h2 id="nocode">Prototype tools vs real repo</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Tool</th><th>Great at</th><th>Watch out for</th></tr>
+    <tr><td>Lovable</td><td>Full-stack apps with Supabase in minutes; non-technical friendly.</td><td>Credits per edit; export to GitHub to keep control.</td></tr>
+    <tr><td>Bolt</td><td>In-browser full-stack dev with instant preview.</td><td>Large projects get slow; check generated backend logic.</td></tr>
+    <tr><td>v0</td><td>Beautiful React/Next UI and components.</td><td>Mostly frontend; bring your own backend.</td></tr>
+    <tr><td>Replit Agent</td><td>Backend + hosting + DB in one place.</td><td>Lock-in to their hosting unless you export.</td></tr>
+    <tr><td>Claude Code / Cursor</td><td>Real repos, tests, any stack, production path.</td><td>Needs local setup; you own the environment.</td></tr>
+  </table></div>
+</main>
+</body>
+</html>

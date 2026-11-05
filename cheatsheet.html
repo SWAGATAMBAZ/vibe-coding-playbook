@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>One-page cheat sheet & sources · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+<style>@media print{.sidebar,.menu-btn,.page-foot{display:none!important}.layout{display:block}main{padding:0}}</style>
+</head>
+<body data-page="cheatsheet">
+<main>
+  <div class="eyebrow">Reference</div>
+  <h1>One-page cheat sheet</h1>
+  <p class="lede">Read this the night before. Print it with <span class="kbd">Ctrl</span>+<span class="kbd">P</span>; the sidebar hides automatically.</p>
+
+  <div class="grid two">
+    <div class="card"><h4>The loop: C-S-B-V-M (45 min)</h4><p><b>Clarify</b> 0–7: goal → segments → pick one → pains → pick one → <i>your</i> solution.<br><b>Spec</b> 7–14: persona PRD from your decisions → review aloud → self-critique → lock scope.<br><b>Build</b> 14–31: happy path with mocks → one feature per prompt.<br><b>Verify</b> 31–39: click through, edge cases, precise fix prompts.<br><b>Metrics</b> 39–45: north-star, guardrail, risks, AI guardrails, next.</p></div>
+    <div class="card"><h4>Opening script</h4><p>"Let me restate the problem… I'll spend ~7 minutes on scope, build the core flow with the AI, test it, and finish with metrics and risks. First: what's the business goal, and who do you see as the main user?"</p></div>
+    <div class="card"><h4>What's scored</h4><p>Human delta · strategic leverage · product direction · audit & redirect · verification · narration. <b>Judgement, not prompts.</b></p></div>
+    <div class="card"><h4>Build prompt anatomy</h4><p>Role · goal (user + outcome) · context (spec, stack) · constraints (scope, don't touch) · acceptance criteria · output format · "ask if unclear".</p></div>
+    <div class="card"><h4>10 checks before "done"</h4><p>Empty state · long input · invalid input · double submit · failed/slow AI call · mobile width · second user can't see data · no key in client · console clean · acceptance criteria all pass.</p></div>
+    <div class="card"><h4>When it breaks</h4><p>Narrate → read the error → precise fix prompt (steps, expected, actual, error) → two strikes = revert & shrink scope → mock it honestly and move on.</p></div>
+    <div class="card"><h4>Default stack line</h4><p>"Next.js + Tailwind + shadcn, Supabase for Postgres, auth and RLS, LLM calls server-side with validated JSON, timeout and fallback, deployed on Vercel."</p></div>
+    <div class="card"><h4>System design names</h4><p>CDN · load balancer · API gateway (auth, rate limit, routing) · stateless services · Redis cache · Postgres + replicas · queue + workers · object storage · LLM gateway (routing, fallback, caching, budgets) · observability + evals.</p></div>
+    <div class="card"><h4>Database line</h4><p>"Postgres first: relational + jsonb + pgvector. Redis when we need caching/rate limits; a dedicated vector DB past millions of vectors or heavy filtering; OLAP for event analytics."</p></div>
+    <div class="card"><h4>Agent line</h4><p>"Simplest thing first: one call → workflow → agent only if steps vary. Least privilege, human approval for irreversible actions, step and cost budgets, traces and evals. n8n for ops automation, LangGraph for stateful product agents, Claude Agent SDK for tool-rich agents."</p></div>
+    <div class="card"><h4>MCP line</h4><p>"MCP is a standard protocol so agents can use tools and data: servers expose tools, resources and prompts; the host connects to them. N+M integrations instead of N×M. Watch for prompt injection and give least privilege."</p></div>
+    <div class="card"><h4>Wrap-up metrics</h4><p>North-star tied to user value · 2–3 inputs · guardrail (quality, cost, latency, complaints) · one experiment (hypothesis, variant, success criterion).</p></div>
+    <div class="card"><h4>AI guardrails</h4><p>Show sources/confidence · edit/undo · human review for high stakes · input/output filters · minimal PII to the model · evals before launch · monitoring after.</p></div>
+    <div class="card"><h4>Claude Code muscle memory</h4><p>Plan mode (<span class="kbd">Shift</span>+<span class="kbd">Tab</span>) · <code>@file</code> · <code>/clear</code> · <code>/review</code> · <code>/security-review</code> · commit after each working step · <code>/kickoff → /slice → /verify → /ship → /demo</code>.</p></div>
+  </div>
+
+  <h2 id="stack">The skill stack at a glance</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Plan</th><th>Design</th><th>Backend & data</th><th>AI</th><th>Quality</th></tr>
+    <tr><td>grill-me · prd-development · Spec Kit · Context7 · Firecrawl</td><td>frontend-design · shadcn MCP · Figma MCP · web-design-guidelines · react-best-practices</td><td>Supabase MCP · postgres best practices · Vercel MCP · Stripe MCP</td><td>claude-api · langchain-skills · n8n-mcp + n8n-skills · mcp-builder</td><td>TDD · systematic-debugging · Playwright MCP · code-review · security-guidance · commit-commands</td></tr>
+  </table></div>
+
+  <h2 id="sources">Sources & further reading</h2>
+  <h3>Interview</h3>
+  <ul>
+    <li><a href="https://igotanoffer.com/en/advice/pm-vibe-coding-interview">IGotAnOffer: How to crack the PM vibe coding interview</a> (formats, competencies, 5-step framework)</li>
+    <li><a href="https://www.news.aakashg.com/p/vibe-coding-interviews-for-pms-complete">Aakash Gupta: Vibe coding interviews for PMs, complete guide</a> (company reports)</li>
+    <li><a href="https://underdog.io/blog/vibe-coding-interviews-for-engineers">Underdog: Vibe coding interviews guide</a> (verification and orchestration signals)</li>
+  </ul>
+  <h3>Claude Code, skills, plugins</h3>
+  <ul>
+    <li><a href="https://docs.claude.com/en/docs/claude-code/overview">Claude Code docs</a> · <a href="https://docs.claude.com/en/docs/claude-code/hooks">hooks reference</a></li>
+    <li><a href="https://github.com/anthropics/skills">anthropics/skills</a> · <a href="https://github.com/anthropics/claude-plugins-official">anthropics/claude-plugins-official</a> · <a href="https://developertoolkit.ai/en/ecosystem/plugins/anthropic-dev-plugins/">overview of Anthropic's developer plugins</a></li>
+    <li><a href="https://github.com/obra/superpowers">obra/superpowers</a> · <a href="https://github.com/mattpocock/skills">mattpocock/skills</a> · <a href="https://github.com/deanpeters/Product-Manager-Skills">deanpeters/Product-Manager-Skills</a></li>
+    <li><a href="https://github.com/vercel-labs/agent-skills">vercel-labs/agent-skills</a> · <a href="https://github.com/supabase/agent-skills">supabase/agent-skills</a> · <a href="https://github.com/trailofbits/skills">trailofbits/skills</a></li>
+    <li><a href="https://github.com/github/spec-kit">github/spec-kit</a></li>
+  </ul>
+  <h3>MCP</h3>
+  <ul>
+    <li><a href="https://modelcontextprotocol.io">modelcontextprotocol.io</a> · <a href="https://scalar.com/learn/mcp/mcp-server-examples">MCP server examples & endpoints</a> · <a href="https://ui.shadcn.com/docs/mcp">shadcn MCP</a> · <a href="https://github.com/microsoft/playwright-mcp">Playwright MCP</a> · <a href="https://github.com/upstash/context7">Context7</a></li>
+  </ul>
+  <h3>Agents & data</h3>
+  <ul>
+    <li><a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic: Building effective agents</a> · <a href="https://blog.langchain.com/langchain-skills">LangChain Skills</a> · <a href="https://github.com/czlonkowski/n8n-mcp">n8n-mcp</a> · <a href="https://github.com/czlonkowski/n8n-skills">n8n-skills</a></li>
+    <li><a href="https://dev.to/datanestdigital/choosing-a-vector-database-in-2026-pgvector-vs-pinecone-vs-qdrant-vs-weaviate-lef">Choosing a vector database in 2026</a> · <a href="https://techsy.io/en/blog/best-vector-databases-2026">Best vector databases 2026</a></li>
+  </ul>
+  <p style="color:var(--muted);font-size:14px">Researched November 2026. Tool names, endpoints and install commands change quickly; when something doesn't work, check the linked repo or docs first.</p>
+</main>
+</body>
+</html>

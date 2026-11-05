@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Worked example: AI personalization tracker · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="personalization">
+<main>
+  <div class="eyebrow">Solutions · 01</div>
+  <h1>Worked example: "Nudge", an AI personalization tracker</h1>
+  <p class="lede">The full loop on one realistic prompt: scoping, spec, data model, architecture, the personalization logic, prompts for each build slice, verification, metrics and guardrails. Rebuild it yourself in 90 minutes, then in 45.</p>
+  <div class="callout interview"><div class="tag">🎯 The prompt</div><p>"Build an AI personalization tracker that learns a user's habits and suggests one small daily improvement."</p></div>
+  <div class="toc" data-auto></div>
+
+  <h2 id="clarify">1 · Clarify & scope (minutes 0–7)</h2>
+  <p><b>Questions I'd ask:</b> What's the business goal: engagement, retention or monetisation? Mobile or web? Do we have any data (wearables, calendar) or start from zero? Any sensitivity constraints (health data)?</p>
+  <p><b>Assumed answers:</b> goal = retention of new users; web-first (mobile-friendly); no integrations in v1; mood/sleep notes are sensitive.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Segment</th><th>Pain</th><th>Frequency</th><th>Reach</th></tr>
+    <tr><td><b>Busy professionals restarting habits</b></td><td>Start strong, quit in week 2; no idea what actually helps <i>them</i></td><td>High</td><td>High (onboarding)</td></tr>
+    <tr><td>Students in exam season</td><td>Burnout, inconsistent sleep</td><td>Seasonal</td><td>Medium</td></tr>
+    <tr><td>People managing a health condition</td><td>Need to track triggers</td><td>High</td><td>Low + regulated</td></tr>
+  </table></div>
+  <p><b>Pick:</b> busy professionals: biggest pain × most reachable × directly tied to the retention goal. The health segment is tempting but brings medical-advice risk into an MVP.</p>
+  <p><b>Solution (my call, not the AI's):</b> a 20-second daily check-in, and after 7 days, <b>one</b> personalised micro-suggestion with a "why" drawn from the user's own data. Not a chatbot: users don't want another conversation, they want one useful nudge.</p>
+
+  <h2 id="prd">2 · Mini-PRD</h2>
+  <script type="text/plain" class="snippet" data-lang="md" data-title="specs/spec.md">
+    # Nudge — MVP
+    Problem: busy professionals abandon habit tracking in week 2 because they get no feedback on what works for them.
+    Goal: improve week-2 retention.   North-star: % of new users with ≥ 5 check-ins in their first 10 days.
+    Guardrails: suggestion dismiss rate < 40% · p95 suggestion latency < 2s (precomputed) · AI cost < $0.01 per active user/day
+
+    ## Stories
+    1. Check-in: Given I'm on Today, when I set mood (1–5), energy (1–5), sleep hours and tick habits done, then it saves in < 20s and my streak updates.
+    2. Suggestion: Given ≥ 7 check-ins, when I open Today, then I see exactly ONE suggestion (≤ 80 chars) with a "why" (≤ 140 chars) based on my data, and can Accept / Snooze / Dismiss.
+    3. Learning: Given I dismiss a suggestion type twice, then I'm not shown that type for 14 days.
+    4. Empty state: Given < 7 check-ins, then I see progress "4 of 7 days until your first insight".
+    5. Control: I can see what data is used and delete all my data in one click.
+
+    ## AI
+    Pattern detection = deterministic stats (no AI). LLM only writes the suggestion + why from aggregated stats.
+    Fallback: a rule-based suggestion from the strongest pattern. No raw notes or names go to the model.
+
+    ## Out of scope (v1)
+    Notifications, wearables, social, chat, medical advice, mobile apps.
+  </script>
+
+  <h2 id="arch">3 · Architecture</h2>
+  <div class="flow"><div class="node">Next.js UI<small>Today · History · Privacy</small></div><span class="arrow">→</span><div class="node">Server actions<small>auth + validation</small></div><span class="arrow">→</span><div class="node hl">Supabase Postgres<small>RLS per user</small></div><span class="arrow">→</span><div class="node">Nightly job<small>stats → patterns</small></div><span class="arrow">→</span><div class="node hl">LLM<small>phrase 1 suggestion</small></div><span class="arrow">→</span><div class="node">suggestions table<small>cached for the day</small></div></div>
+  <p><b>Why precompute nightly?</b> Instant page loads, predictable cost (one call per active user per day), and the suggestion can't change on refresh. On-demand generation is the fallback for brand-new users who hit day 7 mid-day.</p>
+  <script type="text/plain" class="snippet" data-lang="sql" data-title="supabase/migrations/001_init.sql">
+    create table habits (
+      id uuid primary key default gen_random_uuid(),
+      user_id uuid not null references auth.users(id) on delete cascade,
+      name text not null, active boolean default true, created_at timestamptz default now()
+    );
+    create table checkins (
+      id uuid primary key default gen_random_uuid(),
+      user_id uuid not null references auth.users(id) on delete cascade,
+      day date not null, mood smallint check (mood between 1 and 5),
+      energy smallint check (energy between 1 and 5), sleep_hours numeric(3,1), note text,
+      created_at timestamptz default now(), unique (user_id, day)
+    );
+    create table checkin_habits (
+      checkin_id uuid references checkins(id) on delete cascade,
+      habit_id uuid references habits(id) on delete cascade,
+      primary key (checkin_id, habit_id)
+    );
+    create table suggestions (
+      id uuid primary key default gen_random_uuid(),
+      user_id uuid not null references auth.users(id) on delete cascade,
+      day date not null, kind text not null, title text not null, why text not null,
+      source text check (source in ('llm','rule')), status text default 'shown'
+        check (status in ('shown','accepted','snoozed','dismissed')),
+      created_at timestamptz default now(), unique (user_id, day)
+    );
+    create index on checkins (user_id, day desc);
+    -- RLS: every table
+    alter table habits enable row level security;       create policy own on habits for all using (user_id = auth.uid());
+    alter table checkins enable row level security;     create policy own on checkins for all using (user_id = auth.uid());
+    alter table suggestions enable row level security;  create policy own on suggestions for all using (user_id = auth.uid());
+  </script>
+
+  <h2 id="logic">4 · The personalization logic (where PM judgement shows)</h2>
+  <p>"Personalization" is a ladder. Climb only as far as the data and the stage justify:</p>
+  <div class="table-wrap"><table>
+    <tr><th>Level</th><th>How</th><th>When</th></tr>
+    <tr><td>0 · Rules</td><td>"Sleep &lt; 6h for 3 days → suggest earlier wind-down."</td><td>Day 1; cold start; fallback forever.</td></tr>
+    <tr><td><b>1 · Personal stats</b> (MVP)</td><td>Compare outcomes on days with vs without each habit/condition; rank by effect size and sample count.</td><td>From ~7 check-ins.</td></tr>
+    <tr><td><b>2 · LLM phrasing</b> (MVP)</td><td>LLM turns the top pattern into a friendly, specific suggestion + why. It does not invent patterns.</td><td>With level 1.</td></tr>
+    <tr><td>3 · Feedback learning</td><td>Down-weight suggestion types the user dismisses; up-weight accepted ones.</td><td>Week 2+.</td></tr>
+    <tr><td>4 · Bandits / population priors</td><td>Contextual bandit chooses suggestion type; similar-user priors for cold start (embeddings).</td><td>Thousands of users.</td></tr>
+  </table></div>
+  <div class="widget" id="demo"></div>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="the LLM prompt (system)">
+    You write ONE tiny, specific, doable-today suggestion for a habit-tracking user.
+    Use ONLY the pattern and stats provided. Never give medical advice or mention diagnoses.
+    Tone: warm, concrete, no guilt. Title ≤ 80 chars. Why ≤ 140 chars and must cite the user's own numbers.
+    Avoid suggestion kinds listed in "avoid". Reply with JSON only: {"kind": string, "title": string, "why": string}
+  </script>
+
+  <h2 id="build">5 · Build slices (tasks.md) with their prompts</h2>
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Slice</th><th>Prompt gist</th><th>Verify</th></tr>
+    <tr><td>1</td><td>Check-in form + history with mock user (localStorage)</td><td>"Build Today with a 20-second check-in… mock data… empty/loading/error states."</td><td>Log 3 days; refresh; data persists.</td></tr>
+    <tr><td>2</td><td>Streak + "x of 7 days" progress</td><td>"Add streak logic with unit tests for gaps, same-day edits, timezones."</td><td>Tests pass; skip a day → streak resets.</td></tr>
+    <tr><td>3</td><td>Pattern engine (pure function + tests)</td><td>"Write findPatterns(checkins) returning ranked effects with min 3 samples per side; TDD."</td><td>Seeded data → expected top pattern.</td></tr>
+    <tr><td>4</td><td>Suggestion card with rule-based text</td><td>"Show 1 suggestion with Accept/Snooze/Dismiss; save status."</td><td>Dismiss twice → type hidden.</td></tr>
+    <tr><td>5</td><td>LLM phrasing via server route</td><td>Use the <a href="stack.html#ai-call">safe LLM call pattern</a>: zod, timeout, fallback.</td><td>Kill the API key → fallback still shows.</td></tr>
+    <tr><td>6</td><td>Supabase + auth + RLS</td><td>"Migrate to Supabase with the schema above; RLS on all tables."</td><td>Second user can't see first user's rows.</td></tr>
+    <tr><td>7</td><td>Privacy page + delete-all</td><td>"Show what data we use; one-click delete with confirmation."</td><td>Delete → all rows gone.</td></tr>
+    <tr><td>8</td><td>Metrics</td><td><code>/metrics</code> → events: checkin_saved, suggestion_shown/accepted/dismissed.</td><td>Events visible in PostHog/console.</td></tr>
+  </table></div>
+
+  <h2 id="verify">6 · Verify: the edge cases to show off</h2>
+  <ul>
+    <li>Day 1 user (no data) · exactly 7 check-ins · a user who always does every habit (no contrast → no "with vs without" pattern).</li>
+    <li>Two check-ins on the same day (should update, not duplicate) · timezone midnight.</li>
+    <li>LLM returns invalid JSON or medical advice → validation rejects → rule fallback.</li>
+    <li>Free-text note with an injection attempt ("ignore instructions…"): notes are never sent to the model.</li>
+  </ul>
+
+  <h2 id="metrics">7 · Metrics, risks, guardrails</h2>
+  <div class="grid two">
+    <div class="card"><h4>Metric tree</h4><p><b>North-star:</b> % new users with ≥5 check-ins in first 10 days.<br><b>Inputs:</b> D1 check-in completion · day-7 insight reach rate · suggestion accept rate · next-day return after accept.<br><b>Guardrails:</b> dismiss rate · "creepy" feedback · cost per DAU · p95 latency.</p></div>
+    <div class="card"><h4>Experiment</h4><p>H: showing a personalised "why" increases next-day return vs a generic tip. A/B on new users, 2 weeks, primary metric = next-day check-in after a suggestion; MDE ~5 pp.</p></div>
+    <div class="card"><h4>Risks</h4><p>Spurious patterns from tiny samples · feels creepy · health-advice liability · cost creep · users gaming streaks.</p></div>
+    <div class="card"><h4>Guardrails</h4><p>Min sample sizes + "based on 9 days" in the why · transparency page and delete-all · no-medical-advice rule + validator · nightly batch with budget cap · snooze/dismiss learning.</p></div>
+  </div>
+
+  <h2 id="45">The 45-minute interview version</h2>
+  <p>Do slices 1, 3 (simplified), 4 and 5 with localStorage and a mocked LLM if needed. Spend the saved time on the "why from your own data" insight, the edge cases, and the metric tree. That's where you out-think the AI, which is the point of the round.</p>
+  <h3>v2 roadmap to mention</h3>
+  <ul><li>Calendar/wearable integrations (with consent) · weekly reflection summary · contextual bandit for suggestion choice · similar-user priors for cold start · push notifications at the user's best time.</li></ul>
+
+<script>
+document.addEventListener("vcp:ready",()=>{
+  const H=["walk","read","no screens after 10pm"];
+  let days=[];
+  function gen(){ days=Array.from({length:14},()=>{const walk=Math.random()<.5,read=Math.random()<.5,scr=Math.random()<.45; const sleep=+(5.5+Math.random()*2.5+(scr?.6:0)).toFixed(1); const energy=Math.max(1,Math.min(5,Math.round(2+(walk?1.1:0)+(sleep>=7?.7:0)+Math.random()*1.2-.5))); return {walk,read,scr,sleep,energy};}); }
+  function patterns(){
+    const out=[];
+    const test=(name,f,kind)=>{const a=days.filter(f),b=days.filter(d=>!f(d)); if(a.length<3||b.length<3) return; const ma=a.reduce((s,d)=>s+d.energy,0)/a.length, mb=b.reduce((s,d)=>s+d.energy,0)/b.length; out.push({name,kind,diff:ma-mb,ma,mb,na:a.length,nb:b.length});};
+    test("you walked",d=>d.walk,"walk"); test("you read",d=>d.read,"read"); test("no screens after 10pm",d=>d.scr,"screens"); test("you slept 7h+",d=>d.sleep>=7,"sleep");
+    return out.sort((x,y)=>y.diff-x.diff);
+  }
+  const TXT={walk:"Take a 10-minute walk before lunch",read:"Read 10 pages before bed tonight",screens:"Screens off at 10pm tonight",sleep:"Aim for lights-out 30 minutes earlier"};
+  function draw(){
+    const p=patterns(), top=p[0];
+    const el=document.getElementById("demo");
+    el.innerHTML=`<h4>Try it: the level-1 pattern engine on 14 synthetic days</h4>
+    <div class="table-wrap"><table style="font-size:13px"><tr><th>Day</th>${days.map((d,i)=>`<th>${i+1}</th>`).join("")}</tr>
+    <tr><td>Energy</td>${days.map(d=>`<td>${d.energy}</td>`).join("")}</tr><tr><td>Sleep</td>${days.map(d=>`<td>${d.sleep}</td>`).join("")}</tr>
+    ${H.map((h,j)=>`<tr><td>${h}</td>${days.map(d=>`<td>${[d.walk,d.read,d.scr][j]?"✓":""}</td>`).join("")}</tr>`).join("")}</table></div>
+    <p style="font-size:14px">Ranked effects on energy: ${p.map(x=>`<span class="pill ${x.diff>0?"green":"red"}">${x.name}: ${x.diff>0?"+":""}${x.diff.toFixed(1)}</span>`).join(" ")}</p>
+    <div class="result">${top&&top.diff>0.3?`<b>💡 ${TXT[top.kind]}</b><br><span style="font-size:14px">Why: on days ${top.name}, your energy averaged ${top.ma.toFixed(1)} vs ${top.mb.toFixed(1)} (based on ${top.na+top.nb} days).</span><br><span style="font-size:12.5px;color:var(--muted)">The LLM would only rephrase this; the pattern comes from the user's data.</span>`:"No pattern strong enough yet → show a rule-based tip and keep collecting data. (This honesty is a feature.)"}</div>
+    <button class="btn" id="regen" style="margin-top:10px">🎲 New user data</button>`;
+    document.getElementById("regen").onclick=()=>{gen();draw();};
+  }
+  gen(); draw();
+});
+</script>
+</main>
+</body>
+</html>

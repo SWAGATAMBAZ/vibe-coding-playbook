@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Which database when? · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="databases">
+<main>
+  <div class="eyebrow">Build · 03</div>
+  <h1>Which database when?</h1>
+  <p class="lede">The short answer for almost every prototype and most products: <b>Postgres</b>. The long answer is knowing the six situations where something else wins, and saying so with a reason.</p>
+  <div class="toc" data-auto></div>
+
+  <h2 id="default">Why Postgres is the default</h2>
+  <ul>
+    <li>Relational data with joins and transactions (users, orders, check-ins).</li>
+    <li><code>jsonb</code> columns for flexible data, so you rarely need a separate document DB.</li>
+    <li><b>pgvector</b> for embeddings and semantic search; full-text search built in.</li>
+    <li>Row-level security for per-user privacy; mature tooling; every AI tool knows it.</li>
+    <li>Managed options: Supabase (plus auth and storage), Neon (serverless, branching), RDS / Cloud SQL.</li>
+  </ul>
+  <div class="callout interview"><div class="tag">🎯 Say it like this</div><p>"I'll start with Postgres: relational core, jsonb for flexible fields and pgvector for semantic search, so one database covers the MVP. If we outgrow it, the first additions would be Redis for caching and rate limits, and a dedicated vector store only past several million vectors or with heavy filtered search."</p></div>
+
+  <h2 id="chooser">Interactive chooser</h2>
+  <div class="widget" id="chooser"></div>
+
+  <h2 id="map">The database map</h2>
+  <input type="search" data-filter="#dbt" placeholder="Filter: vector, cache, analytics, graph…">
+  <div class="table-wrap"><table id="dbt"><thead><tr><th>Type</th><th>Pick</th><th>Use when</th><th>Avoid when</th></tr></thead><tbody>
+    <tr data-row><td><b>Relational</b></td><td>Postgres (Supabase, Neon), MySQL</td><td>Default for product data, transactions, reporting joins.</td><td>Truly schema-less, massive write throughput.</td></tr>
+    <tr data-row><td><b>Embedded / local</b></td><td>SQLite, libSQL/Turso; DuckDB for local analytics</td><td>Prototypes, mobile/offline, single-user tools, edge.</td><td>Many concurrent writers.</td></tr>
+    <tr data-row><td><b>Document</b></td><td>MongoDB, Firestore</td><td>Nested, evolving documents; Firebase-style realtime mobile apps.</td><td>You need joins and strong relational integrity (use Postgres jsonb instead).</td></tr>
+    <tr data-row><td><b>Key-value / cache</b></td><td>Redis, Valkey, Upstash</td><td>Caching, sessions, rate limits, leaderboards, queues (light).</td><td>As your only source of truth.</td></tr>
+    <tr data-row><td><b>Vector</b></td><td>pgvector → Qdrant / Pinecone / Weaviate / Milvus</td><td>RAG, semantic search, recommendations, dedup. Start with pgvector.</td><td>You have &lt; a few million vectors and already run Postgres.</td></tr>
+    <tr data-row><td><b>Search engine</b></td><td>Postgres FTS → Typesense, Meilisearch, Elasticsearch/OpenSearch, Algolia</td><td>Typo-tolerant product search, facets, logs search.</td><td>Simple keyword search on small data.</td></tr>
+    <tr data-row><td><b>Graph</b></td><td>Neo4j, Neptune; or Postgres recursive queries</td><td>Fraud rings, social graphs, knowledge graphs, multi-hop relationships.</td><td>Relationships are shallow (1–2 joins).</td></tr>
+    <tr data-row><td><b>Time-series</b></td><td>TimescaleDB (Postgres), InfluxDB</td><td>Sensor/IoT, wearables, metrics, price ticks.</td><td>Low volume; a normal table with an index works.</td></tr>
+    <tr data-row><td><b>Analytics / OLAP</b></td><td>ClickHouse, BigQuery, Snowflake, DuckDB</td><td>Aggregations over billions of events, dashboards, product analytics.</td><td>Transactional app reads/writes.</td></tr>
+    <tr data-row><td><b>Wide-column</b></td><td>Cassandra, ScyllaDB, DynamoDB</td><td>Huge write volume with known access patterns, global scale.</td><td>Ad-hoc queries, early-stage products.</td></tr>
+    <tr data-row><td><b>Object storage</b></td><td>S3, R2, GCS, Supabase Storage</td><td>Files, images, audio, model artifacts, exports.</td><td>Structured queries.</td></tr>
+  </tbody></table></div>
+
+  <h2 id="vector">Choosing a vector store</h2>
+  <div class="table-wrap"><table>
+    <tr><th></th><th>pgvector</th><th>Qdrant</th><th>Pinecone</th><th>Weaviate</th></tr>
+    <tr><td>Model</td><td>Postgres extension</td><td>Open source (Rust) + cloud</td><td>Fully managed SaaS</td><td>Open source + cloud</td></tr>
+    <tr><td>Best for</td><td>Most RAG apps; one DB to run</td><td>Fast filtered search at scale, self-host</td><td>Zero-ops production</td><td>Built-in hybrid search & vectorisation</td></tr>
+    <tr><td>Rough ceiling before moving</td><td>~5–10M vectors (practitioner rule of thumb)</td><td>Hundreds of millions+</td><td>Billions (managed)</td><td>Large</td></tr>
+  </table></div>
+  <p>Practitioners' consensus: start with pgvector, and treat retrieval quality as a chunking, embedding and reranking problem before it's a database problem. Move when you have real numbers.</p>
+
+  <h2 id="schema">Schema design checklist</h2>
+  <ul>
+    <li>UUID primary keys, <code>created_at</code>/<code>updated_at</code>, foreign keys with sensible <code>on delete</code>.</li>
+    <li>Design from <b>queries</b>: list the top 5 queries, then add an index for each.</li>
+    <li>Normalise core entities; use <code>jsonb</code> for truly variable attributes.</li>
+    <li>Enable RLS on every user-data table; write policies like <code>user_id = auth.uid()</code>.</li>
+    <li>Never store secrets or raw card numbers; minimise PII; plan deletion (GDPR/DPDP "right to erasure").</li>
+    <li>Migrations in git (<code>supabase/migrations</code>), never manual production edits.</li>
+  </ul>
+  <script type="text/plain" class="snippet" data-lang="sql" data-title="example: per-user data with RLS and vectors">
+    create extension if not exists vector;
+
+    create table checkins (
+      id uuid primary key default gen_random_uuid(),
+      user_id uuid not null references auth.users(id) on delete cascade,
+      day date not null,
+      mood smallint check (mood between 1 and 5),
+      note text,
+      note_embedding vector(1024),
+      created_at timestamptz default now(),
+      unique (user_id, day)
+    );
+    create index on checkins (user_id, day desc);
+    create index on checkins using hnsw (note_embedding vector_cosine_ops);
+
+    alter table checkins enable row level security;
+    create policy "own rows" on checkins for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+  </script>
+  <div class="callout tip"><div class="tag">Sources</div><p><a href="https://dev.to/datanestdigital/choosing-a-vector-database-in-2026-pgvector-vs-pinecone-vs-qdrant-vs-weaviate-lef">Choosing a vector database in 2026</a> · <a href="https://techsy.io/en/blog/best-vector-databases-2026">Techsy: best vector databases 2026</a> · <a href="https://noqta.tn/en/blog/vector-database-comparison-2026-pgvector-pinecone-qdrant-weaviate">Noqta: vector DB comparison</a> · <a href="https://supabase.com/docs/guides/database/postgres/row-level-security">Supabase: row-level security</a></p></div>
+
+<script>
+const Q=[
+ ["data","What does your core data look like?",[["rel","Users, orders, records with relationships"],["doc","Deeply nested documents that change shape a lot"],["events","High-volume events/metrics over time"],["files","Files, images, audio"]]],
+ ["need","What else must it do?",[["none","Nothing special"],["semantic","Semantic search / RAG / recommendations"],["search","Typo-tolerant product search with facets"],["graph","Multi-hop relationships (fraud rings, social)"],["analytics","Dashboards over huge event volumes"],["realtime","Realtime sync to mobile clients"]]],
+ ["scale","Scale in year one?",[["small","Prototype / < 100k users"],["mid","Up to a few million users"],["big","Massive writes or billions of rows"]]],
+ ["ops","Ops appetite?",[["managed","Managed, zero ops"],["self","Happy to self-host"]]],
+];
+const st={data:"rel",need:"none",scale:"small",ops:"managed"};
+function rec(){
+  let main="Postgres (Supabase or Neon)", add=[], why=[];
+  if(st.data==="doc"){ main="Postgres with jsonb columns"; why.push("jsonb gives document flexibility without losing joins and transactions. Choose MongoDB/Firestore only if the whole model is documents."); }
+  if(st.data==="events"){ main = st.scale==="big"?"ClickHouse (or BigQuery) for events + Postgres for app data":"TimescaleDB (Postgres extension)"; why.push("Time-ordered, append-heavy data needs time partitioning or columnar storage."); }
+  if(st.data==="files"){ add.push("Object storage (Supabase Storage / S3 / R2) for the files, metadata in Postgres"); }
+  if(st.need==="semantic"){ add.push(st.scale==="big"?"Qdrant or Pinecone as a dedicated vector store":"pgvector in the same Postgres"); why.push("Embeddings next to relational data keeps filters and joins simple until you outgrow it."); }
+  if(st.need==="search"){ add.push(st.scale==="small"?"Postgres full-text search first, then Typesense/Meilisearch":"Typesense / Elasticsearch / Algolia"); }
+  if(st.need==="graph"){ add.push(st.scale==="small"?"Postgres recursive CTEs first; Neo4j if queries go 3+ hops":"Neo4j / Amazon Neptune"); }
+  if(st.need==="analytics"){ add.push("ClickHouse / BigQuery / Snowflake for analytics (keep OLTP in Postgres)"); }
+  if(st.need==="realtime"){ add.push("Supabase Realtime (Postgres) or Firestore for live sync"); }
+  if(st.scale!=="small") add.push("Redis/Upstash for caching, sessions and rate limits");
+  if(st.scale==="big"&&st.data==="rel") why.push("Scale reads with replicas and caching first; consider DynamoDB/Cassandra only for known, huge access patterns.");
+  why.push(st.ops==="managed"?"Managed services (Supabase, Neon, Pinecone, Upstash) keep you shipping.":"Self-hosting (Postgres, Qdrant, ClickHouse) cuts cost at scale but adds on-call.");
+  return `<b>Primary:</b> ${main}${add.length?`<br><b>Add:</b> ${add.join(" · ")}`:""}<br><span style="font-size:14px">${why.join(" ")}</span>`;
+}
+function draw(){
+  const r=document.getElementById("chooser");
+  r.innerHTML="<h4>Answer four questions</h4>"+Q.map(q=>`<p style="margin:.6em 0 .3em"><b>${q[1]}</b></p><div class="seg" style="flex-wrap:wrap">${q[2].map(o=>`<button data-k="${q[0]}" data-v="${o[0]}" class="${st[q[0]]===o[0]?"on":""}">${o[1]}</button>`).join("")}</div>`).join("")+`<div class="result">${rec()}</div>`;
+  r.querySelectorAll("button").forEach(b=>b.onclick=()=>{st[b.dataset.k]=b.dataset.v;draw();});
+}
+draw();
+</script>
+</main>
+</body>
+</html>

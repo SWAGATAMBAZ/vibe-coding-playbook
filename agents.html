@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI agents: n8n, LangGraph, Agent SDK · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="agents">
+<main>
+  <div class="eyebrow">Build · 04</div>
+  <h1>AI agents: when, which framework, and how to build one</h1>
+  <p class="lede">Most "agent" ideas should be workflows. This page helps you tell the difference, pick n8n vs LangGraph vs the Claude Agent SDK, and vibe code a real agent with tools, memory and human approval.</p>
+  <div class="toc" data-auto></div>
+
+  <h2 id="what">Workflow or agent?</h2>
+  <div class="grid two">
+    <div class="card"><span class="pill green">Workflow</span><h4>Code decides the path</h4><p>LLM calls are steps in a fixed pipeline: classify → extract → route → notify. Predictable, cheap, testable. <b>Use by default.</b></p></div>
+    <div class="card"><span class="pill hot">Agent</span><h4>The model decides the path</h4><p>An LLM in a loop chooses tools until the goal is met. Flexible for open-ended tasks, but costlier, slower and harder to test. Use when steps can't be known in advance.</p></div>
+  </div>
+  <div class="callout interview"><div class="tag">🎯 The line that impresses</div><p>"I'd start with the simplest thing that works: a single LLM call with retrieval, then a workflow. I'd only make it an agent if the steps genuinely vary per request, and I'd add human approval before any action that's hard to undo."</p></div>
+
+  <h2 id="anatomy">Anatomy of an agent</h2>
+  <div class="flow"><div class="node hl">Model<small>reasoning</small></div><span class="arrow">+</span><div class="node">Tools<small>APIs, DB, search, MCP</small></div><span class="arrow">+</span><div class="node">Memory<small>thread + long-term</small></div><span class="arrow">+</span><div class="node">Instructions<small>goal, rules, stop condition</small></div><span class="arrow">+</span><div class="node hl">Guardrails<small>permissions, approval, limits</small></div></div>
+  <p>Loop: observe → think → act (tool call) → observe the result → repeat until done or a step/budget limit is hit.</p>
+
+  <h2 id="patterns">The five patterns (+ the autonomous agent)</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Pattern</th><th>How it works</th><th>Product example</th></tr>
+    <tr><td><b>Prompt chaining</b></td><td>Fixed sequence; each step's output feeds the next, with checks in between.</td><td>Draft PRD → critique → revise.</td></tr>
+    <tr><td><b>Routing</b></td><td>Classify the input, send it to a specialised prompt/model.</td><td>Support: billing vs bug vs how-to; cheap model for easy ones.</td></tr>
+    <tr><td><b>Parallelisation</b></td><td>Run subtasks at once (sectioning) or the same task several times (voting).</td><td>Review a contract clause-by-clause in parallel; 3 votes on a risky moderation call.</td></tr>
+    <tr><td><b>Orchestrator–workers</b></td><td>A lead model breaks the task down and delegates to workers dynamically.</td><td>Research agent: plan queries → workers search → synthesise.</td></tr>
+    <tr><td><b>Evaluator–optimiser</b></td><td>One model generates, another critiques against criteria, loop until good.</td><td>Marketing copy that must hit brand rules; code that must pass tests.</td></tr>
+    <tr><td><b>Autonomous agent</b></td><td>Model + tools in a loop with an open-ended goal.</td><td>Coding agents, travel booking, ops triage.</td></tr>
+  </table></div>
+  <p>These come from Anthropic's "Building effective agents" guidance, which is worth reading in full.</p>
+
+  <h2 id="choose">Which framework?</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Option</th><th>Style</th><th>Pick it when</th><th>Watch out</th></tr>
+    <tr><td><b>n8n</b></td><td>Visual workflows, 1,000+ integrations, AI Agent node</td><td>Business automation, ops teams own it, mostly deterministic with one or two LLM decisions, webhooks and schedules.</td><td>Complex long-lived state and custom control flow get messy.</td></tr>
+    <tr><td><b>LangGraph</b></td><td>Code: a state graph of nodes and edges</td><td>You need explicit control: branching, loops, checkpointing to Postgres, human-in-the-loop interrupts, time-travel debugging, any model.</td><td>More code for simple agents.</td></tr>
+    <tr><td><b>Claude Agent SDK</b></td><td>Code: Claude Code's agent loop as a library (Python/TS)</td><td>Tool-rich agents fast: file/shell/web tools, subagents, MCP, built-in context management. Claude-first.</td><td>Less explicit workflow control; you add persistence.</td></tr>
+    <tr><td><b>OpenAI Agents SDK</b></td><td>Code: agents, handoffs, guardrails, sandboxes</td><td>OpenAI-first stacks, sandboxed execution.</td><td>Provider coupling.</td></tr>
+    <tr><td><b>CrewAI</b></td><td>Role-based multi-agent teams</td><td>Quick multi-agent prototypes ("researcher + writer").</td><td>Less control in production.</td></tr>
+    <tr><td><b>Plain SDK + your code</b></td><td>A while-loop around tool calls</td><td>Single-purpose agents; you want zero framework.</td><td>You rebuild memory, retries, tracing.</td></tr>
+  </table></div>
+  <div class="callout pm"><div class="tag">Rule of thumb</div><p><b>Ops automation</b> → n8n. <b>Custom product feature with state and approvals</b> → LangGraph. <b>Agent that needs to read/write files, run tools, use MCP, and you're on Claude</b> → Claude Agent SDK. Prototype in whichever you can explain best in the interview.</p></div>
+
+  <h2 id="n8n">Building with n8n</h2>
+  <ol>
+    <li><b>Run n8n:</b> n8n Cloud, or self-host with Docker (<code>docker run -it -p 5678:5678 n8nio/n8n</code>).</li>
+    <li><b>Trigger:</b> Webhook, Schedule, Gmail/Slack/Form trigger.</li>
+    <li><b>AI Agent node:</b> attach a Chat Model (Claude/OpenAI), Memory (window buffer or Postgres), and Tools (HTTP Request, Postgres, Google Sheets, Slack, or a sub-workflow as a tool).</li>
+    <li><b>Structured output parser</b> to get JSON you can route on with an IF/Switch node.</li>
+    <li><b>Human in the loop:</b> send to Slack/email with approve/reject, wait for the response, then act.</li>
+    <li><b>Error workflow</b> for failures; log runs; test with pinned data before activating.</li>
+  </ol>
+  <h3>Let Claude Code build the n8n workflow</h3>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="terminal">
+    # n8n-mcp knows n8n's node catalog and templates; add your instance URL + API key to manage workflows
+    claude mcp add n8n-mcp -e MCP_MODE=stdio -e LOG_LEVEL=error \
+      -e N8N_API_URL=https://your-n8n.example.com -e N8N_API_KEY=$N8N_API_KEY -- npx n8n-mcp
+    claude plugin marketplace add czlonkowski/n8n-skills   # then install n8n-mcp-skills from /plugin
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="prompt">
+    Build an n8n workflow: Gmail trigger on new support emails → AI Agent (Claude) classifies into
+    billing / bug / how-to / urgent and extracts {customer, summary, priority} as JSON → Switch on category
+    → create a Linear issue for bugs, a HubSpot ticket for billing, reply with a help-centre answer for how-to
+    → urgent ones go to Slack #support-urgent for human approval first. Validate the workflow with the
+    n8n-mcp validation tools before creating it, and keep it inactive until I review it.
+  </script>
+
+  <h2 id="langgraph">Building with LangGraph</h2>
+  <p>A minimal agent with tools, per-user memory (checkpointer + <code>thread_id</code>) and a human-approval interrupt before a risky action.</p>
+  <script type="text/plain" class="snippet" data-lang="python" data-title="agent.py · pip install langgraph langchain-anthropic">
+    import os
+    from typing import Annotated, TypedDict
+    from langchain_anthropic import ChatAnthropic
+    from langchain_core.tools import tool
+    from langgraph.graph import StateGraph, START
+    from langgraph.graph.message import add_messages
+    from langgraph.prebuilt import ToolNode, tools_condition
+    from langgraph.checkpoint.memory import InMemorySaver   # use the Postgres checkpointer in production
+    from langgraph.types import interrupt, Command
+
+    @tool
+    def get_user_stats(user_id: str) -> dict:
+        """Return 14-day averages of mood, energy, sleep and habit completion for a user."""
+        return {"sleep_avg": 6.1, "energy_avg": 2.8, "walk_days": 3, "energy_on_walk_days": 3.9}
+
+    @tool
+    def send_nudge(user_id: str, text: str) -> str:
+        """Send a nudge notification to the user. Requires human approval."""
+        decision = interrupt({"action": "send_nudge", "user_id": user_id, "text": text})
+        return "sent" if decision == "approve" else "cancelled by reviewer"
+
+    tools = [get_user_stats, send_nudge]
+    llm = ChatAnthropic(model=os.environ["AI_MODEL"]).bind_tools(tools)
+
+    class State(TypedDict):
+        messages: Annotated[list, add_messages]
+
+    def agent(state: State):
+        return {"messages": [llm.invoke(state["messages"])]}
+
+    g = StateGraph(State)
+    g.add_node("agent", agent)
+    g.add_node("tools", ToolNode(tools))
+    g.add_edge(START, "agent")
+    g.add_conditional_edges("agent", tools_condition)     # tool call → "tools", else end
+    g.add_edge("tools", "agent")
+    app = g.compile(checkpointer=InMemorySaver())
+
+    cfg = {"configurable": {"thread_id": "user-42"}}         # memory is per thread
+    app.invoke({"messages": [("user", "Look at user-42's stats and send one helpful nudge.")]}, cfg)
+    # ...execution pauses at interrupt(); show the draft to a human, then resume:
+    app.invoke(Command(resume="approve"), cfg)
+  </script>
+  <p>Install the <code>langchain-ai/langchain-skills</code> pack so Claude Code writes current LangGraph APIs (persistence, interrupts, LangSmith evals) instead of outdated ones.</p>
+
+  <h2 id="sdk">Building with the Claude Agent SDK</h2>
+  <script type="text/plain" class="snippet" data-lang="python" data-title="research_agent.py · pip install claude-agent-sdk">
+    import anyio
+    from claude_agent_sdk import query, ClaudeAgentOptions
+
+    async def main():
+        options = ClaudeAgentOptions(
+            system_prompt="You are a competitive-research analyst. Cite every claim with a URL.",
+            allowed_tools=["WebSearch", "WebFetch", "Write"],   # least privilege
+            max_turns=15,
+        )
+        async for message in query(prompt="Compare the onboarding of 3 habit-tracking apps; write report.md", options=options):
+            print(message)
+
+    anyio.run(main)
+  </script>
+  <p>The SDK gives you the same loop, tools, context management, subagents and MCP support that power Claude Code. Check the official docs for current option names before you build.</p>
+
+  <h2 id="memory">Memory, multi-agent and protocols</h2>
+  <ul>
+    <li><b>Short-term memory:</b> the conversation/thread state (checkpointer).</li>
+    <li><b>Long-term memory:</b> facts and preferences stored in your DB (or a store) and retrieved per user. Let users see and delete it.</li>
+    <li><b>Multi-agent:</b> split by context and permissions, not by job titles. One orchestrator + specialised workers usually beats a "team" of chatty agents.</li>
+    <li><b>MCP</b> connects an agent to tools; <b>A2A</b> (agent-to-agent) lets agents from different systems talk. Name both if asked about interoperability.</li>
+  </ul>
+
+  <h2 id="guard">Guardrails & evals for agents</h2>
+  <div class="grid">
+    <div class="card"><h4>Least privilege</h4><p>Only the tools needed; read-only by default; scoped credentials.</p></div>
+    <div class="card"><h4>Human approval</h4><p>Before sending, paying, deleting or anything external and irreversible.</p></div>
+    <div class="card"><h4>Budgets</h4><p>Max steps, max tokens, max cost per run; timeouts.</p></div>
+    <div class="card"><h4>Prompt-injection defence</h4><p>Treat tool/web content as data; separate instructions; validate tool arguments.</p></div>
+    <div class="card"><h4>Tracing</h4><p>Every step, tool call and cost logged (LangSmith, Langfuse).</p></div>
+    <div class="card"><h4>Evals</h4><p>Task success rate, tool-call accuracy, steps per task, cost per task, human-escalation rate, on a fixed test set.</p></div>
+  </div>
+
+  <h2 id="vibe">Vibe-code an agent with Claude Code</h2>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="prompt">
+    Using LangGraph (use the langchain skills), build a support-triage agent as a FastAPI service.
+    Tools: search_help_center(query) via pgvector, get_order(order_id) (read-only), create_ticket(...)
+    which must interrupt for human approval. Persist threads with the Postgres checkpointer.
+    Add: max 8 steps, 20s timeout per tool, structured JSON final answer {category, answer, sources, escalate}.
+    Write 10 eval cases in tests/evals.yaml and a script that reports task success and avg steps.
+    Start with /speckit.specify, then plan and tasks; implement test-first.
+  </script>
+  <div class="callout tip"><div class="tag">Sources</div><p><a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic: Building effective agents</a> · <a href="https://langchain-ai.github.io/langgraph/">LangGraph docs</a> · <a href="https://blog.langchain.com/langchain-skills">LangChain Skills</a> · <a href="https://github.com/czlonkowski/n8n-mcp">n8n-mcp</a> · <a href="https://metavert.io/compare/langgraph-vs-n8n">LangGraph vs n8n</a> · <a href="https://www.betterclaw.io/blog/claude-agent-sdk-vs-langgraph">Claude Agent SDK vs LangGraph</a></p></div>
+</main>
+</body>
+</html>

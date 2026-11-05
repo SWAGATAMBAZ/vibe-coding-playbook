@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Starter kit · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="starter">
+<main>
+  <div class="eyebrow">Claude Code · 05</div>
+  <h1>Starter kit: the files you drop into every repo</h1>
+  <p class="lede">A CLAUDE.md template, 7 custom commands, 3 hooks, a reviewer subagent, shared connectors and a one-shot installer. Together they turn the playbook into muscle memory: <code>/kickoff</code> → <code>/slice</code> → <code>/verify</code> → <code>/ship</code> → <code>/demo</code>.</p>
+  <div class="callout tip"><div class="tag">Get the files</div><p>They're all in this site's repo under <a href="https://github.com/SWAGATAMBAZ/vibe-coding-playbook/tree/main/starter-kit"><code>starter-kit/</code></a>. Clone the repo and copy the folder's contents (including the hidden <code>.claude/</code>) into your project root, or copy each file from below.</p></div>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="copy into a new project">
+    git clone --depth 1 https://github.com/SWAGATAMBAZ/vibe-coding-playbook /tmp/vcp
+    cp -r /tmp/vcp/starter-kit/. ./my-app/ && cd my-app
+    chmod +x .claude/hooks/*.sh install.sh && ./install.sh
+  </script>
+  <div class="toc" data-auto></div>
+
+  <h2 id="flow">The command flow</h2>
+  <div class="flow">
+    <div class="node hl">/kickoff<small>clarify → spec.md → tasks.md</small></div><span class="arrow">→</span>
+    <div class="node hl">/slice<small>next task, test-first, commit</small></div><span class="arrow">↺</span>
+    <div class="node">/verify<small>prove acceptance criteria</small></div><span class="arrow">→</span>
+    <div class="node">/ship<small>review + security + PR</small></div><span class="arrow">→</span>
+    <div class="node hl">/demo<small>script, metrics, risks</small></div>
+  </div>
+  <p>Plus <code>/metrics</code> to instrument success and <code>/handoff</code> before you <code>/clear</code>. Each command orchestrates skills you already installed (grill-me style questioning, TDD, Playwright, code review) rather than duplicating them. If you use Spec Kit instead, swap <code>/kickoff</code> for the <code>/speckit.*</code> commands and keep the rest.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Kind</th><th>Where it lives</th><th>How it runs</th></tr>
+    <tr><td>Custom command</td><td><code>.claude/commands/name.md</code> (team) or <code>~/.claude/commands/</code> (you)</td><td>You type <code>/name args</code>; <code>$ARGUMENTS</code> is replaced. Frontmatter sets description and argument hint.</td></tr>
+    <tr><td>Skill</td><td><code>.claude/skills/name/SKILL.md</code></td><td>Claude loads it when the description matches; also invocable as <code>/name</code>.</td></tr>
+    <tr><td>Subagent</td><td><code>.claude/agents/name.md</code></td><td>Own context + restricted tools; "use the reviewer agent on this diff".</td></tr>
+    <tr><td>Hook</td><td><code>.claude/settings.json</code> → <code>hooks</code></td><td>Deterministic shell command on an event; exit code 2 blocks and tells Claude why.</td></tr>
+  </table></div>
+
+  <h2 id="claudemd">CLAUDE.md</h2>
+  <script type="text/plain" class="snippet" data-lang="md" data-title="CLAUDE.md">
+# CLAUDE.md
+
+<!-- Keep this file under ~150 lines. It is read at the start of every session.
+     Facts and conventions go here; rules that must ALWAYS hold go in .claude/settings.json hooks. -->
+
+## Product
+- What: [one sentence: product, user, job to be done]
+- Current spec: @specs/spec.md   <!-- or specs/<feature>/spec.md if you use Spec Kit -->
+- Success metric: [north-star] · Guardrail: [e.g. AI suggestion rejection rate < 30%]
+
+## Stack
+- Next.js (App Router) + TypeScript (strict) + Tailwind + shadcn/ui
+- Supabase: Postgres, auth, storage. Row-level security on EVERY table.
+- AI calls only in server code (`app/api/**` or server actions). Keys from `process.env`, never in client code.
+- LLM output is validated with zod; every AI call has a timeout and a non-AI fallback.
+- Deploy: Vercel. Env vars documented in `.env.example`.
+
+## Commands
+- `pnpm dev` · `pnpm test` · `pnpm lint` · `pnpm typecheck` · `pnpm build`
+- E2E: `pnpm exec playwright test`
+
+## How we work
+- Workflow lane: [Spec Kit | SDD-lite with /kickoff → /slice → /verify → /ship]. Don't mix lanes.
+- Plan before multi-file changes. Ask when the spec is ambiguous instead of guessing.
+- One task at a time from `tasks.md`; tick it when its acceptance criteria pass.
+- Write or update tests for every acceptance criterion. Never say "done" without running them.
+- Find the root cause before fixing a bug. If a fix fails twice, stop and propose alternatives.
+- Small commits with clear messages after each working step.
+- Don't add dependencies without saying why. Prefer boring, well-documented libraries.
+
+## Conventions
+- Components in `components/`, server logic in `lib/server/`, DB types generated from Supabase.
+- Accessible by default: labels, focus states, keyboard navigation, AA contrast.
+- Every list has an empty state; every async action has loading and error states.
+
+## Gotchas
+- [Add things Claude got wrong more than once, e.g. "use the Supabase server client in route handlers"]
+</script>
+
+  <h2 id="commands">Custom commands</h2>
+  <div data-tabs>
+    <div class="tabs"><button>/kickoff</button><button>/slice</button><button>/verify</button><button>/ship</button><button>/demo</button><button>/metrics</button><button>/handoff</button></div>
+    <div class="tab-panel"><script type="text/plain" class="snippet" data-lang="md" data-title=".claude/commands/kickoff.md">
+---
+description: Turn a one-line product prompt into a scoped SDD-lite spec (interview or new feature)
+argument-hint: "<one-line product prompt>"
+---
+We're starting: $ARGUMENTS
+
+Do NOT write code yet. Work with me in this order, one short message per step, and wait for my answer each time:
+
+1. Restate the prompt in one sentence and ask me the business goal (acquisition, engagement, retention, revenue, cost).
+2. Offer 3 user segments with their main pain in a compact table. I pick one.
+3. Offer 3 solution directions for that pain. I pick or edit one.
+4. Propose must-haves (max 4) and an explicit out-of-scope list. I confirm.
+5. Write `specs/spec.md` with: What & why (user, pain, goal, success metric, guardrail metric) · Stories with Given/When/Then acceptance criteria (max 5) · Edge cases · Where AI is used + fallback when it's wrong · Data model · Out of scope · [ASSUMPTION] markers.
+6. Write `tasks.md`: ordered, vertical slices, each small enough to build and verify in one go, first one = happy path with mock data.
+
+Keep each message short. Recommend an answer with each question so I can just say "yes".
+</script></div>
+    <div class="tab-panel"><script type="text/plain" class="snippet" data-lang="md" data-title=".claude/commands/slice.md">
+---
+description: Implement the next unchecked task in tasks.md, test it, verify it, tick it, commit
+argument-hint: "[optional task number]"
+---
+Read `specs/spec.md` (or the active specs/<feature>/spec.md) and `tasks.md`.
+Pick task $ARGUMENTS, or the first unchecked task if none was given.
+
+1. In 3–5 bullets, say which files you'll touch and how you'll verify the task against its acceptance criteria. Wait for "go" only if the plan touches more than 5 files.
+2. Write or update tests for the acceptance criteria first and run them to see them fail.
+3. Implement the minimum to pass. Don't touch unrelated code or add unrequested features.
+4. Run tests, lint and typecheck. If a check fails, find the root cause before changing code.
+5. If the task has UI, open it with Playwright, walk the flow, and check the console for errors.
+6. Tick the task in tasks.md, then commit with a clear message.
+7. Report: what changed, how it was verified, anything I should look at.
+</script></div>
+    <div class="tab-panel"><script type="text/plain" class="snippet" data-lang="md" data-title=".claude/commands/verify.md">
+---
+description: Prove the app meets the spec - tests, types, lint, browser walk-through, edge cases
+---
+Verify the current state against `specs/spec.md`. Don't fix anything in this pass; just report.
+
+1. Run tests, typecheck, lint and build. Paste the summary lines.
+2. For each acceptance criterion, check it in the running app (Playwright) and mark PASS / FAIL with evidence (what you did, what you saw).
+3. Try these edge cases: empty input, very long input, special characters, double submit, slow or failed AI call, logged-out user, mobile width (375px).
+4. List console errors and failed network requests.
+5. Output a table: criterion / edge case · result · evidence · suggested fix. End with the 3 most important fixes.
+</script></div>
+    <div class="tab-panel"><script type="text/plain" class="snippet" data-lang="md" data-title=".claude/commands/ship.md">
+---
+description: Pre-merge / pre-demo gate - review, security, docs, then commit and open a PR
+---
+Run the release gate on the current branch. Stop and report if any step finds a blocking issue.
+
+1. Code review of the full diff vs main: bugs, spec mismatches, missing tests, dead code, naming. Report file:line, issue, fix. (Use the code-review plugin or /review if available.)
+2. Security pass (same as /security-review): secrets in client code or git, missing auth or authorization checks, missing RLS policies, injection (SQL, XSS, prompt injection in AI inputs), unsafe CORS, missing rate limits on AI or auth endpoints, risky new dependencies.
+3. AI-specific checks: every LLM call is server-side, has a timeout, validated output and a fallback; prompts don't include unnecessary PII; cost per request is bounded.
+4. Make sure `.env.example` lists every env var and README explains setup, decisions and what's out of scope.
+5. If everything passes: commit, push the branch, and open a PR whose description lists what changed, how it was verified, and known limitations. Never push to main directly.
+</script></div>
+    <div class="tab-panel"><script type="text/plain" class="snippet" data-lang="md" data-title=".claude/commands/demo.md">
+---
+description: Interview/demo wrap-up - 90-second demo script, metrics, risks, AI guardrails, next steps
+---
+Read `specs/spec.md` and look at the running app. Produce, in plain spoken English:
+
+1. **Demo script (≤ 90 seconds):** the user and their pain in one sentence → the happy path as 4–6 steps (what I click, what they see) → one edge case we handle well.
+2. **Metrics:** one north-star tied to the user pain, 2–3 input metrics, 1–2 guardrail metrics, and the analytics events needed to measure them.
+3. **Risks & guardrails:** top 4 risks (AI quality, privacy, bias/safety, cost/latency) with the product guardrail for each (UX, human review, thresholds, evals, monitoring).
+4. **Next:** the experiment I'd run first (hypothesis, variant, success criterion), what I'd build in v2, and what I'd cut.
+
+Keep it tight. I'll edit it and say it in my own words.
+</script></div>
+    <div class="tab-panel"><script type="text/plain" class="snippet" data-lang="md" data-title=".claude/commands/metrics.md">
+---
+description: Define success metrics and instrument them (events + a simple dashboard query)
+argument-hint: "[product goal]"
+---
+Goal: $ARGUMENTS (if empty, read it from specs/spec.md).
+
+1. Propose a metric tree: north-star → 3 input metrics → 2 guardrails. Each must be measurable from events we can log.
+2. Define the analytics events (name, when it fires, properties) in a table. Never include raw PII or free-text notes in properties.
+3. Add the event calls to the code behind a single `track()` helper (PostHog if configured, otherwise a console/DB logger).
+4. Write the SQL (or PostHog insight description) for the north-star and one guardrail.
+5. Propose one experiment to move the north-star: hypothesis, variant, success criterion, minimum sample/duration.
+</script></div>
+    <div class="tab-panel"><script type="text/plain" class="snippet" data-lang="md" data-title=".claude/commands/handoff.md">
+---
+description: Save progress to HANDOFF.md so a fresh session (after /clear) can continue cleanly
+---
+Write `HANDOFF.md` (overwrite it) with:
+- Goal and the active spec file
+- Done so far (tasks ticked, with commit hashes)
+- In progress: exact state, what was being tried, what failed and why
+- Decisions made and the reason for each
+- Next 3 steps, in order
+- Gotchas discovered (also propose any that belong in CLAUDE.md)
+
+Under 60 lines. Then tell me: "Run /clear, then say: read HANDOFF.md and continue."
+</script></div>
+  </div>
+
+  <h2 id="hooks">Settings & hooks</h2>
+  <p>Hooks are the guarantees. CLAUDE.md says "run tests before you finish"; the Stop hook makes it true. Three hooks cover most of the risk in vibe-coded work:</p>
+  <div class="table-wrap"><table>
+    <tr><th>Event</th><th>Hook</th><th>Why</th></tr>
+    <tr><td><code>PreToolUse</code> (Bash)</td><td>block-dangerous.sh</td><td>Stops destructive git, deletes, destructive SQL, printing secrets, curl | bash.</td></tr>
+    <tr><td><code>PostToolUse</code> (Edit|Write)</td><td>format.sh</td><td>Consistent formatting with zero tokens spent.</td></tr>
+    <tr><td><code>Stop</code></td><td>tests-must-pass.sh</td><td>Claude can't declare victory while tests fail. Checks <code>stop_hook_active</code> to avoid loops.</td></tr>
+  </table></div>
+  <div data-tabs>
+    <div class="tabs"><button>settings.json</button><button>block-dangerous.sh</button><button>format.sh</button><button>tests-must-pass.sh</button></div>
+    <div class="tab-panel"><script type="text/plain" class="snippet" data-lang="json" data-title=".claude/settings.json">
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm dev)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm lint *)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm build)",
+      "Bash(pnpm exec playwright *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git log *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Bash(git push --force *)",
+      "Bash(rm -rf *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-dangerous.sh" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format.sh", "timeout": 30 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/tests-must-pass.sh", "timeout": 300 }
+        ]
+      }
+    ]
+  }
+}
+</script></div>
+    <div class="tab-panel"><script type="text/plain" class="snippet" data-lang="bash" data-title=".claude/hooks/block-dangerous.sh">
+#!/usr/bin/env bash
+# PreToolUse hook (matcher: Bash). Blocks destructive or secret-leaking shell commands.
+# Exit code 2 = block the tool call; stderr is shown to Claude so it can choose another approach.
+input="$(cat)"
+cmd="$(printf '%s' "$input" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null)"
+
+block() { echo "Blocked by .claude/hooks/block-dangerous.sh: $1. Ask the user to run it themselves if it is really needed." >&2; exit 2; }
+
+case "$cmd" in
+  *"rm -rf /"*|*"rm -rf ~"*|*"rm -rf ."*|*"rm -rf *"*) block "recursive delete" ;;
+  *"git push --force"*|*"git push -f"*)               block "force push" ;;
+  *"git reset --hard"*|*"git clean -fd"*)             block "discards uncommitted work" ;;
+  *"git push"*" main"*|*"git push"*" master"*)        block "direct push to main; open a PR instead" ;;
+  *"DROP TABLE"*|*"drop table"*|*"TRUNCATE"*)         block "destructive SQL" ;;
+  *"cat .env"*|*"printenv"*|*"echo \$"*KEY*)           block "could print secrets into the transcript" ;;
+  *"curl"*"| bash"*|*"curl"*"| sh"*)                  block "piping a remote script into a shell" ;;
+esac
+exit 0
+</script></div>
+    <div class="tab-panel"><script type="text/plain" class="snippet" data-lang="bash" data-title=".claude/hooks/format.sh">
+#!/usr/bin/env bash
+# PostToolUse hook (matcher: Edit|Write). Formats the file Claude just changed. Never blocks.
+input="$(cat)"
+file="$(printf '%s' "$input" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("file_path",""))' 2>/dev/null)"
+[ -z "$file" ] || [ ! -f "$file" ] && exit 0
+
+case "$file" in
+  *.ts|*.tsx|*.js|*.jsx|*.json|*.css|*.md|*.html)
+    npx --no-install prettier --write "$file" >/dev/null 2>&1 ;;
+  *.py)
+    (ruff format "$file" || black -q "$file") >/dev/null 2>&1 ;;
+esac
+exit 0
+</script></div>
+    <div class="tab-panel"><script type="text/plain" class="snippet" data-lang="bash" data-title=".claude/hooks/tests-must-pass.sh">
+#!/usr/bin/env bash
+# Stop hook. If code changed and a test script exists, run tests before Claude may finish.
+# Exit 2 = Claude must keep working; stderr tells it why. stop_hook_active prevents infinite loops.
+input="$(cat)"
+active="$(printf '%s' "$input" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("stop_hook_active",False))' 2>/dev/null)"
+[ "$active" = "True" ] && exit 0
+
+cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
+git diff --quiet HEAD -- . 2>/dev/null && exit 0          # nothing changed: nothing to check
+[ -f package.json ] && grep -q '"test"' package.json || exit 0
+
+if ! out="$(npm test --silent 2>&1)"; then
+  echo "Tests are failing. Fix them (find the root cause first) before saying you're done." >&2
+  printf '%s\n' "$out" | tail -40 >&2
+  exit 2
+fi
+exit 0
+</script></div>
+  </div>
+  <p>Other useful hook ideas: a <code>SessionStart</code> hook that injects <code>HANDOFF.md</code>; a <code>Notification</code> hook that pings you when Claude needs input; a <code>UserPromptSubmit</code> hook that appends the current spec path. See the hooks reference in the Claude Code docs.</p>
+
+  <h2 id="agent">Reviewer subagent</h2>
+  <script type="text/plain" class="snippet" data-lang="md" data-title=".claude/agents/reviewer.md">
+---
+name: reviewer
+description: Independent reviewer that checks a diff against the spec, for bugs, security and missing tests. Use after a task or feature is implemented, before committing or demoing.
+tools: Read, Grep, Glob, Bash
+---
+You are a strict senior engineer reviewing someone else's work. You did not write this code.
+
+1. Read the active spec (specs/spec.md or specs/<feature>/spec.md) and tasks.md.
+2. Read `git diff main...HEAD` (or the uncommitted diff).
+3. Check, in order: acceptance criteria met? bugs and unhandled edge cases? security (secrets, authz, RLS, injection, prompt injection)? tests cover each criterion? unnecessary complexity or unrequested features?
+4. Run the tests yourself. Never edit files.
+
+Output only real issues, ranked by severity: `file:line — issue — why it matters — suggested fix`. If there are none, say so in one line.
+</script>
+
+  <h2 id="mcpjson">Shared connectors (.mcp.json)</h2>
+  <script type="text/plain" class="snippet" data-lang="json" data-title=".mcp.json">
+{
+  "mcpServers": {
+    "playwright": { "command": "npx", "args": ["@playwright/mcp@latest"] },
+    "shadcn": { "command": "npx", "args": ["shadcn@latest", "mcp"] },
+    "supabase": { "type": "http", "url": "https://mcp.supabase.com/mcp" }
+  }
+}
+</script>
+
+  <h2 id="install">One-shot installer</h2>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="install.sh">
+#!/usr/bin/env bash
+# Vibe Coding Playbook: core stack installer. Run from the root of a project.
+# Installs: one skill/plugin per task (core set) + the three always-on connectors.
+# Remote MCP servers (Supabase) ask you to log in: run /mcp inside Claude Code afterwards.
+set -e
+
+command -v claude >/dev/null || { echo "Install Claude Code first: curl -fsSL https://claude.ai/install.sh | bash"; exit 1; }
+
+echo "── Plugins from Anthropic's official marketplace"
+claude plugin marketplace add anthropics/claude-plugins-official 2>/dev/null || true
+claude plugin install frontend-design@claude-plugins-official
+claude plugin install code-review@claude-plugins-official
+claude plugin install security-guidance@claude-plugins-official
+
+echo "── Skills (one per task)"
+npx -y skills add mattpocock/skills --skill grill-me --agent claude-code
+npx -y skills add deanpeters/Product-Manager-Skills --skill prd-development --agent claude-code
+npx -y skills add vercel-labs/agent-skills --skill web-design-guidelines --agent claude-code
+npx -y skills add obra/superpowers --skill test-driven-development --agent claude-code
+npx -y skills add obra/superpowers --skill systematic-debugging --agent claude-code
+
+echo "── Connectors"
+claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp || true
+claude mcp add --scope project playwright -- npx @playwright/mcp@latest || true
+claude mcp add --scope project --transport http supabase https://mcp.supabase.com/mcp || true
+
+echo "── Spec Kit (spec-driven development)"
+if command -v uv >/dev/null; then
+  uv tool install specify-cli --from git+https://github.com/github/spec-kit.git || true
+  echo "Run: specify init . --ai claude"
+else
+  echo "Install uv (https://docs.astral.sh/uv/) to use Spec Kit, or use the SDD-lite commands in .claude/commands."
+fi
+
+echo "Done. Open Claude Code and run /mcp to log in to remote servers, then /help to see your commands."
+</script>
+  <p>Want a different set? Use the <a href="skills.html#builder">install-script builder</a> on the skills page.</p>
+</main>
+</body>
+</html>

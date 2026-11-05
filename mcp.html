@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCP & connectors · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="mcp">
+<main>
+  <div class="eyebrow">Claude Code · 03</div>
+  <h1>MCP & connectors: give the agent hands and eyes</h1>
+  <p class="lede">The Model Context Protocol is the standard way to plug tools and data into an AI agent. Learn how it works, which connectors to install for any industry, how to keep them safe, and how to build your own in 20 lines.</p>
+  <div class="toc" data-auto></div>
+
+  <h2 id="how">How MCP works</h2>
+  <div class="flow"><div class="node hl">Host<small>Claude Code, Claude app, Cursor</small></div><span class="arrow">⇄</span><div class="node">MCP client<small>one per server, inside the host</small></div><span class="arrow">⇄</span><div class="node hl">MCP server<small>GitHub, Supabase, your API…</small></div><span class="arrow">⇄</span><div class="node">The real system<small>API, DB, files, browser</small></div></div>
+  <div class="grid">
+    <div class="card"><h4>Tools</h4><p>Actions the model can call: <code>create_issue</code>, <code>run_sql</code>, <code>navigate</code>. The most-used primitive.</p></div>
+    <div class="card"><h4>Resources</h4><p>Read-only data the host can attach as context: files, records, docs.</p></div>
+    <div class="card"><h4>Prompts</h4><p>Reusable prompt templates a server exposes, often shown as slash commands.</p></div>
+    <div class="card"><h4>Transports</h4><p><b>stdio</b>: a local process on your machine. <b>Streamable HTTP</b>: a remote server at a URL, usually with OAuth. Remote is now the default for SaaS vendors.</p></div>
+  </div>
+  <div class="callout interview"><div class="tag">🎯 Explain it in one breath</div><p>"MCP is like USB-C for AI apps: one protocol so any agent can use any tool. A server exposes tools, resources and prompts; the host's client discovers them and the model decides when to call them. It replaces N×M custom integrations with N+M."</p></div>
+
+  <h2 id="add">Adding servers to Claude Code</h2>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="terminal">
+    # Remote (HTTP) server: just a URL, then log in with /mcp inside a session
+    claude mcp add --transport http linear https://mcp.linear.app/mcp
+
+    # Local (stdio) server: a command that Claude Code starts
+    claude mcp add playwright -- npx @playwright/mcp@latest
+
+    # Scopes: local (default, just you in this project) · project (.mcp.json, shared via git) · user (all your projects)
+    claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp
+    claude mcp add --scope project --transport http supabase https://mcp.supabase.com/mcp
+
+    claude mcp list          # what's configured
+    # inside a session:  /mcp   → status, login, tools per server
+  </script>
+  <script type="text/plain" class="snippet" data-lang="json" data-title=".mcp.json (committed, shared with your team; secrets come from env vars)">
+    {
+      "mcpServers": {
+        "playwright": { "command": "npx", "args": ["@playwright/mcp@latest"] },
+        "shadcn":     { "command": "npx", "args": ["shadcn@latest", "mcp"] },
+        "supabase":   { "type": "http", "url": "https://mcp.supabase.com/mcp" },
+        "github": {
+          "type": "http",
+          "url": "https://api.githubcopilot.com/mcp/",
+          "headers": { "Authorization": "Bearer ${GITHUB_PAT}" }
+        }
+      }
+    }
+  </script>
+  <p>Teammates who pull the repo are asked to approve project servers before they run. Put user-wide servers (Context7) at user scope and heavy ones (Playwright) at project scope so only repos that need them pay the context cost.</p>
+
+  <h2 id="map">The connector map: what to plug in, by job</h2>
+  <p>Start with three for every project: <b>Context7</b> (docs), <b>Playwright</b> (verify) and your <b>database</b> (Supabase). Add the rest when a task needs them.</p>
+  <input type="search" data-filter="#mcpTable" placeholder="Filter: payments, crm, analytics, design…">
+  <div class="table-wrap"><table id="mcpTable">
+    <thead><tr><th>Job</th><th>Connector</th><th>Endpoint / install</th><th>Typical use</th></tr></thead>
+    <tbody>
+    <tr data-row><td>Live docs</td><td>Context7</td><td><code>npx -y @upstash/context7-mcp</code></td><td>Correct APIs for Next.js, LangGraph, Supabase versions newer than the model.</td></tr>
+    <tr data-row><td>Browser QA</td><td>Playwright</td><td><code>npx @playwright/mcp@latest</code></td><td>Click through flows, screenshot, read console errors, write E2E tests.</td></tr>
+    <tr data-row><td>Database + auth</td><td>Supabase</td><td><code>https://mcp.supabase.com/mcp</code></td><td>Create tables, run migrations, check RLS, query data.</td></tr>
+    <tr data-row><td>Serverless Postgres</td><td>Neon</td><td>Neon's remote MCP</td><td>Branch the DB per feature, run migrations safely.</td></tr>
+    <tr data-row><td>Code & CI</td><td>GitHub</td><td><code>https://api.githubcopilot.com/mcp/</code></td><td>Issues, PRs, failed CI logs, code search across repos.</td></tr>
+    <tr data-row><td>Deploy</td><td>Vercel</td><td><code>https://mcp.vercel.com</code></td><td>Deployments, env vars, build and runtime logs.</td></tr>
+    <tr data-row><td>Edge / infra</td><td>Cloudflare</td><td><code>https://mcp.cloudflare.com/mcp</code></td><td>Workers, KV, R2, DNS.</td></tr>
+    <tr data-row><td>Design</td><td>Figma</td><td><code>https://mcp.figma.com/mcp</code></td><td>Design context, variables/tokens, design-to-code.</td></tr>
+    <tr data-row><td>UI components</td><td>shadcn</td><td><code>npx shadcn@latest mcp</code></td><td>Search and install registry components.</td></tr>
+    <tr data-row><td>Errors</td><td>Sentry</td><td><code>https://mcp.sentry.dev/mcp</code></td><td>Real stack traces and affected users while debugging.</td></tr>
+    <tr data-row><td>Tickets</td><td>Linear / Atlassian (Jira, Confluence)</td><td><code>https://mcp.linear.app/mcp</code> · <code>https://mcp.atlassian.com/v2/mcp</code></td><td>PRD → tickets, status updates, sprint summaries.</td></tr>
+    <tr data-row><td>Docs & wiki</td><td>Notion</td><td><code>https://mcp.notion.com/mcp</code></td><td>Read research and specs, publish PRDs.</td></tr>
+    <tr data-row><td>Payments (fintech, SaaS, e-com)</td><td>Stripe</td><td><code>https://mcp.stripe.com</code></td><td>Products, prices, subscriptions, payment links (test mode).</td></tr>
+    <tr data-row><td>CRM (sales tools)</td><td>HubSpot</td><td><code>https://mcp.hubspot.com</code></td><td>Contacts, deals, pipelines for sales copilots.</td></tr>
+    <tr data-row><td>Product analytics</td><td>PostHog / Amplitude / Mixpanel</td><td>Vendor remote MCP (see their docs)</td><td>Funnels, retention, feature flags: metrics for your PM story.</td></tr>
+    <tr data-row><td>Web research</td><td>Firecrawl</td><td><code>https://mcp.firecrawl.dev/v2/mcp-oauth</code></td><td>Competitor pages, pricing, docs into clean markdown.</td></tr>
+    <tr data-row><td>Automation hub</td><td>Zapier / n8n</td><td>Zapier user URL · <code>npx n8n-mcp</code></td><td>Thousands of app actions; build n8n workflows from chat.</td></tr>
+    <tr data-row><td>Chat & comms</td><td>Slack</td><td>Slack's official MCP</td><td>Post release notes, read feedback channels.</td></tr>
+    <tr data-row><td>Data warehouse</td><td>BigQuery / Snowflake / DBHub</td><td>Vendor MCP or DBHub</td><td>Text-to-SQL analytics on real data (read-only role!).</td></tr>
+    <tr data-row><td>Cloud</td><td>AWS</td><td>AWS MCP servers</td><td>Docs, infra lookups, cost questions.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Endpoints change; check each vendor's MCP docs page before installing. In the Claude apps, many of these are one-click <b>connectors</b> under Settings.</p>
+
+  <h2 id="industry">Starter connectors by industry</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Industry</th><th>Add on top of Context7 + Playwright + Supabase</th></tr>
+    <tr><td>Fintech / banking</td><td>Stripe (test mode), Sentry, a read-only warehouse connector; Trail of Bits skills before launch.</td></tr>
+    <tr><td>E-commerce / D2C</td><td>Stripe or Shopify, PostHog, Figma, Algolia/search if available.</td></tr>
+    <tr><td>B2B SaaS</td><td>Linear/Jira, Notion, HubSpot, PostHog, GitHub.</td></tr>
+    <tr><td>Healthcare</td><td>Keep it minimal: no real patient data in prompts; synthetic data only; Sentry with PII scrubbing.</td></tr>
+    <tr><td>Logistics / ops</td><td>n8n-mcp or Zapier, Google Maps (vendor MCP), Slack.</td></tr>
+    <tr><td>Media / creator</td><td>Cloudflare R2 or S3, Figma, PostHog.</td></tr>
+    <tr><td>Internal tools / data</td><td>Warehouse connector (read-only), Notion, Slack.</td></tr>
+  </table></div>
+
+  <h2 id="safety">MCP safety rules</h2>
+  <ol>
+    <li><b>Least privilege.</b> Read-only DB roles, test-mode keys, project-scoped tokens. Never production write access in a prototype.</li>
+    <li><b>Prompt injection is real.</b> Any text a tool returns (a web page, an issue, an email) can contain instructions. Treat tool output as data; keep human approval on for writes, payments and sends.</li>
+    <li><b>Trusted sources only.</b> Prefer vendor-maintained servers. Read what a local server runs before installing.</li>
+    <li><b>Secrets in env vars</b>, referenced as <code>${VAR}</code>; never commit tokens in <code>.mcp.json</code>.</li>
+    <li><b>Fewer servers, better agent.</b> Each server's tool list eats context and adds choices. Remove what you don't use.</li>
+  </ol>
+
+  <h2 id="build">Build your own MCP server (Python, ~20 lines)</h2>
+  <p>Useful when your product's own API should be usable by agents, or in an interview to show you understand the protocol. Use the <code>mcp-builder</code> skill to go further.</p>
+  <script type="text/plain" class="snippet" data-lang="python" data-title="habits_server.py · pip install mcp">
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("habits")
+    HABITS = {"u1": [{"name": "walk", "streak": 4}, {"name": "read", "streak": 0}]}
+
+    @mcp.tool()
+    def list_habits(user_id: str) -> list[dict]:
+        """Return a user's habits with their current streaks."""
+        return HABITS.get(user_id, [])
+
+    @mcp.tool()
+    def log_habit(user_id: str, name: str) -> str:
+        """Mark a habit as done today and return the new streak."""
+        for h in HABITS.setdefault(user_id, []):
+            if h["name"] == name:
+                h["streak"] += 1
+                return f"{name}: streak {h['streak']}"
+        return f"No habit called {name}"
+
+    if __name__ == "__main__":
+        mcp.run()          # stdio; use transport="streamable-http" to serve remotely
+  </script>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="connect it">
+    claude mcp add habits -- python habits_server.py
+    # then ask: "Which of u1's habits has the longest streak? Log 'read' for today."
+  </script>
+  <p>Good tool design: few tools with clear verbs, tight descriptions (the model reads them), typed inputs, small structured outputs, and errors that tell the model what to do next.</p>
+  <div class="callout tip"><div class="tag">Sources</div><p><a href="https://modelcontextprotocol.io">modelcontextprotocol.io</a> · <a href="https://scalar.com/learn/mcp/mcp-server-examples">Scalar: MCP server examples & endpoints</a> · <a href="https://ui.shadcn.com/docs/mcp">shadcn MCP</a> · <a href="https://techsy.io/en/blog/best-mcp-servers-claude-code">Techsy: best MCP servers for Claude Code</a> · <a href="https://datacamp.com/blog/top-remote-mcp-servers">DataCamp: remote MCP servers</a></p></div>
+</main>
+</body>
+</html>

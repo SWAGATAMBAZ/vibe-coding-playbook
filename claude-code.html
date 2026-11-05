@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claude Code essentials · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="claude-code">
+<main>
+  <div class="eyebrow">Claude Code · 01</div>
+  <h1>Claude Code essentials</h1>
+  <p class="lede">Claude Code is an agent in your terminal (and IDE, desktop and web) that reads your repo, runs commands, edits files and verifies its work. This page is the mental model plus the 20% of features that do 80% of the work.</p>
+  <div class="toc" data-auto></div>
+
+  <h2 id="model">The mental model</h2>
+  <div class="flow"><div class="node">Gather context<small>read files, search, docs via MCP</small></div><span class="arrow">→</span><div class="node">Plan<small>plan mode, spec, tasks</small></div><span class="arrow">→</span><div class="node">Act<small>edit, run, call tools</small></div><span class="arrow">→</span><div class="node hl">Verify<small>tests, browser, lint</small></div><span class="arrow">↺</span></div>
+  <p>Everything you configure feeds one of those boxes. Quality comes from <b>better context</b> (CLAUDE.md, specs, MCP docs), <b>better plans</b> (plan mode, spec-driven flow) and <b>forced verification</b> (tests, hooks, Playwright). Treat Claude like a very fast engineer with no memory: give it a clear brief and a way to check its own work.</p>
+
+  <h2 id="install">Install & first session</h2>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="terminal">
+    curl -fsSL https://claude.ai/install.sh | bash     # macOS / Linux / WSL (native, auto-updates)
+    # Windows:  irm https://claude.ai/install.ps1 | iex      Homebrew:  brew install --cask claude-code
+    cd your-project && claude                          # log in with your Claude account on first run
+    claude doctor                                       # check the install
+    # inside the session:
+    /init        # scans the repo and writes a starter CLAUDE.md
+  </script>
+  <p>The npm package <code>@anthropic-ai/claude-code</code> is deprecated in favour of the native installer. Claude Code also runs in VS Code/JetBrains, the desktop app and on the web, with the same configuration files.</p>
+
+  <h2 id="claudemd">CLAUDE.md: the project's memory</h2>
+  <p>A markdown file Claude reads at the start of every session. Put the <b>non-obvious</b> things there: commands, conventions, architecture, gotchas. Keep it short (under ~150 lines); it's advisory, so anything that must <i>always</i> happen belongs in a hook.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Location</th><th>Scope</th><th>Use for</th></tr>
+    <tr><td><code>~/.claude/CLAUDE.md</code></td><td>You, every project</td><td>Personal preferences: "explain trade-offs", "use pnpm", "never commit to main".</td></tr>
+    <tr><td><code>./CLAUDE.md</code> (committed)</td><td>Team, this repo</td><td>Stack, commands, conventions, architecture, definition of done.</td></tr>
+    <tr><td><code>./sub/dir/CLAUDE.md</code></td><td>That folder</td><td>Rules specific to e.g. <code>/api</code> or <code>/web</code>.</td></tr>
+  </table></div>
+  <p>A ready-made template is on the <a href="starter.html#claudemd">Starter kit</a> page. Use <code>@path/to/file.md</code> inside CLAUDE.md to import longer docs (e.g. your spec) instead of pasting them.</p>
+
+  <h2 id="modes">Plan mode & permission modes</h2>
+  <ul>
+    <li><span class="kbd">Shift</span>+<span class="kbd">Tab</span> cycles modes: normal (asks before edits), <b>auto-accept edits</b>, and <b>plan mode</b> (read-only: it researches and proposes, can't change files).</li>
+    <li><b>Always plan first</b> for anything bigger than a one-file change. Approve or edit the plan, then let it execute.</li>
+    <li><span class="kbd">Esc</span> interrupts; <span class="kbd">Esc</span> <span class="kbd">Esc</span> (or <code>/rewind</code>) jumps back to an earlier point and can restore code.</li>
+    <li>Pre-approve safe commands in <code>.claude/settings.json</code> (<code>permissions.allow</code>) so you're not clicking "yes" 40 times, and deny dangerous ones.</li>
+  </ul>
+
+  <h2 id="commands">Built-in commands you'll actually use</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Command</th><th>What it does</th></tr>
+    <tr><td><code>/init</code></td><td>Generate CLAUDE.md from the codebase.</td></tr>
+    <tr><td><code>/clear</code></td><td>Fresh context. Use between unrelated tasks; the #1 fix for a confused session.</td></tr>
+    <tr><td><code>/compact</code></td><td>Summarise the conversation to free context. Many prefer "write progress to a .md file → /clear → read it back" for big tasks.</td></tr>
+    <tr><td><code>/context</code></td><td>See what's filling the context window (MCP tools, files, history).</td></tr>
+    <tr><td><code>/model</code></td><td>Switch model: biggest model for planning and hard debugging, a faster one for routine edits.</td></tr>
+    <tr><td><code>/review</code>, <code>/security-review</code></td><td>Built-in code review and security review of your changes.</td></tr>
+    <tr><td><code>/mcp</code>, <code>/plugin</code>, <code>/agents</code>, <code>/hooks</code></td><td>Manage connectors, plugins/skills marketplaces, subagents and hooks.</td></tr>
+    <tr><td><code>/permissions</code>, <code>/resume</code>, <code>/rewind</code></td><td>Allow/deny tools; resume an old session; roll back.</td></tr>
+  </table></div>
+  <p>Type <code>/</code> to see everything installed, including commands added by your skills and plugins. Command names evolve; <code>/help</code> is the source of truth.</p>
+
+  <h2 id="extend">The 6 ways to extend Claude Code (and when to use each)</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Mechanism</th><th>What it is</th><th>Who triggers it</th><th>Use it for</th></tr>
+    <tr><td><b>CLAUDE.md</b></td><td>Always-loaded instructions</td><td>Always on</td><td>Project facts and conventions</td></tr>
+    <tr><td><b>Skills</b></td><td>A folder with <code>SKILL.md</code> + scripts/references, loaded only when relevant</td><td>Claude (auto) or you via <code>/name</code></td><td>Repeatable expertise: "how we write PRDs", "how to build n8n workflows"</td></tr>
+    <tr><td><b>Slash commands</b></td><td>A saved prompt in <code>.claude/commands/name.md</code>. Commands and skills are now merged: both create <code>/name</code></td><td>You</td><td>Workflow entry points: <code>/prd</code>, <code>/ship</code>, <code>/demo</code></td></tr>
+    <tr><td><b>Subagents</b></td><td>A specialist with its own context window, prompt and tool permissions (<code>.claude/agents/*.md</code>)</td><td>Claude delegates, or you ask</td><td>Code reviewer, researcher, test writer; keeps the main context clean</td></tr>
+    <tr><td><b>Hooks</b></td><td>Shell commands on lifecycle events (<code>PreToolUse</code>, <code>PostToolUse</code>, <code>Stop</code>, <code>SessionStart</code>…)</td><td>Deterministic, always</td><td>Format on save, block <code>rm -rf</code>/force-push, run tests before "done"</td></tr>
+    <tr><td><b>MCP servers</b></td><td>Connectors to external tools and data</td><td>Claude calls tools</td><td>GitHub, Supabase, Figma, docs, browser, Sentry, Stripe…</td></tr>
+  </table></div>
+  <p><b>Plugins</b> bundle any of the above (skills + commands + agents + hooks + MCP) into one install from a marketplace, e.g. <code>/plugin install code-review@claude-plugins-official</code>.</p>
+  <div class="callout interview"><div class="tag">🎯 Interview one-liner</div><p>"CLAUDE.md is advisory context; hooks are guaranteed. Skills load on demand, so I can have many without bloating context; MCP gives the agent tools and live data; subagents isolate context for specialist work."</p></div>
+
+  <h2 id="context">Context hygiene: the hidden skill</h2>
+  <ul>
+    <li>One task per session. <code>/clear</code> when switching.</li>
+    <li>Point at files with <code>@</code> instead of letting it search the whole repo.</li>
+    <li>Install only the MCP servers a project needs (project scope), because every server's tool list costs context.</li>
+    <li>For long tasks: keep a <code>PLAN.md</code>/<code>tasks.md</code> checklist, let Claude tick it, and restart sessions from it.</li>
+    <li>Delegate research and review to subagents so their reading doesn't fill your main window.</li>
+  </ul>
+
+  <h2 id="subagents">Subagents & parallel work</h2>
+  <script type="text/plain" class="snippet" data-lang="md" data-title=".claude/agents/reviewer.md">
+    ---
+    name: reviewer
+    description: Reviews diffs for bugs, security and spec compliance. Use after any feature is implemented.
+    tools: Read, Grep, Glob, Bash
+    ---
+    You are a strict senior reviewer. Compare the diff against specs/*/spec.md.
+    Report only real issues, ranked: bugs, security, missing acceptance criteria, missing tests.
+    Never edit files. Output: file:line — issue — suggested fix.
+  </script>
+  <p>Run two approaches in parallel with git worktrees (each agent gets an isolated copy), then keep the better one. Great for "try two UI directions".</p>
+
+  <h2 id="headless">Headless & CI</h2>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="non-interactive">
+    claude -p "Summarise what changed on this branch and list risks" --output-format json
+    # In GitHub Actions: install with the native script, then run claude -p for PR reviews or triage.
+  </script>
+
+  <h2 id="habits">Ten habits of strong Claude Code users</h2>
+  <ol>
+    <li>Plan mode before any multi-file change.</li>
+    <li>Give acceptance criteria, not just a goal.</li>
+    <li>Make it verify: tests, a browser check, or a command whose output proves success.</li>
+    <li>Commit after every working step, so rollback is cheap.</li>
+    <li>Small prompts, one feature at a time.</li>
+    <li>Ask for root cause before a fix.</li>
+    <li>Read the diff. Every time.</li>
+    <li>Keep CLAUDE.md short and current; delete stale rules.</li>
+    <li>Encode anything you repeat 3 times as a command or skill.</li>
+    <li>Run <code>/review</code> and <code>/security-review</code> before you demo or merge.</li>
+  </ol>
+</main>
+</body>
+</html>

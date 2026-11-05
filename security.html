@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ship safely: review, test, secure · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="security">
+<main>
+  <div class="eyebrow">Build · 05</div>
+  <h1>Ship safely: review, test, secure</h1>
+  <p class="lede">AI writes code that works on the happy path and quietly skips authorization, validation and rate limits. Catching that is exactly the "audit and redirect" signal interviewers look for, and what keeps a real product out of the news.</p>
+  <div class="toc" data-auto></div>
+
+  <h2 id="loop">The quality loop</h2>
+  <div class="flow"><div class="node">Spec with acceptance criteria</div><span class="arrow">→</span><div class="node hl">Tests first (TDD)</div><span class="arrow">→</span><div class="node">Build</div><span class="arrow">→</span><div class="node hl">Verify in browser</div><span class="arrow">→</span><div class="node">/review</div><span class="arrow">→</span><div class="node hl">/security-review</div><span class="arrow">→</span><div class="node">Ship</div></div>
+  <div class="table-wrap"><table>
+    <tr><th>Layer</th><th>Tool in our stack</th><th>Catches</th></tr>
+    <tr><td>While writing</td><td>security-guidance plugin (hooks), format/lint hooks</td><td>Hardcoded secrets, injection patterns, auth bypass as they appear</td></tr>
+    <tr><td>Behaviour</td><td>TDD skill + Stop hook (tests must pass)</td><td>"Done" that isn't done</td></tr>
+    <tr><td>Reality</td><td>Playwright MCP + <code>/verify</code></td><td>Broken flows, console errors, mobile layout</td></tr>
+    <tr><td>Diff</td><td><code>/review</code>, code-review plugin, reviewer subagent</td><td>Bugs, spec mismatch, missing tests</td></tr>
+    <tr><td>Security</td><td><code>/security-review</code>; Trail of Bits skills for production</td><td>OWASP-class issues, risky dependencies</td></tr>
+  </table></div>
+
+  <h2 id="holes">The 12 holes vibe-coded apps ship with</h2>
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Hole</th><th>Fix</th></tr>
+    <tr><td>1</td><td>API keys in frontend code or committed to git</td><td>Server-only env vars; <code>.env</code> in .gitignore; rotate anything leaked; secret scanning on the repo.</td></tr>
+    <tr><td>2</td><td>Database open to the public (no RLS / exposed anon key with no policies)</td><td>Enable RLS on every table with per-user policies; test as a second user.</td></tr>
+    <tr><td>3</td><td>Authentication but no authorization (any logged-in user can read <code>/api/orders/123</code>)</td><td>Check ownership on the server for every request (IDOR).</td></tr>
+    <tr><td>4</td><td>No input validation</td><td>zod/pydantic schemas on every endpoint; size limits.</td></tr>
+    <tr><td>5</td><td>SQL injection / XSS</td><td>Parameterised queries/ORM; never <code>dangerouslySetInnerHTML</code> with user data; sanitise markdown from LLMs.</td></tr>
+    <tr><td>6</td><td>No rate limiting on AI and auth endpoints</td><td>Per-user and per-IP limits; daily AI budgets; CAPTCHA on signup.</td></tr>
+    <tr><td>7</td><td>Prompt injection</td><td>Separate system instructions from user/tool content; never let model output trigger privileged actions without checks; allow-list tools; human approval for side effects.</td></tr>
+    <tr><td>8</td><td>Sensitive data sent to the LLM or logged</td><td>Minimise and redact PII; aggregate stats instead of raw notes; scrub logs and error trackers.</td></tr>
+    <tr><td>9</td><td>Hallucinated or malicious packages ("slopsquatting")</td><td>Verify every new dependency exists and is popular; lockfiles; dependency audit.</td></tr>
+    <tr><td>10</td><td>Wide-open CORS and missing security headers</td><td>Allow only your origins; CSP, HSTS via the framework/host.</td></tr>
+    <tr><td>11</td><td>Unverified webhooks</td><td>Verify signatures (Stripe, GitHub); idempotent handlers.</td></tr>
+    <tr><td>12</td><td>Verbose errors leaking internals</td><td>Generic messages to users; details only in server logs.</td></tr>
+  </table></div>
+
+  <h2 id="ai">AI-specific risks (OWASP LLM-style)</h2>
+  <div class="grid">
+    <div class="card"><h4>Prompt injection</h4><p>Direct ("ignore previous instructions") and indirect (instructions hidden in a web page, PDF or email the agent reads).</p></div>
+    <div class="card"><h4>Sensitive information disclosure</h4><p>The model reveals system prompts, other users' data, or secrets in context.</p></div>
+    <div class="card"><h4>Excessive agency</h4><p>Agents with too many tools or permissions taking real actions unchecked.</p></div>
+    <div class="card"><h4>Insecure output handling</h4><p>Rendering or executing model output (HTML, SQL, shell) without validation.</p></div>
+    <div class="card"><h4>Unbounded consumption</h4><p>Cost and denial-of-wallet from long prompts, loops, or abuse.</p></div>
+    <div class="card"><h4>Misinformation</h4><p>Confident wrong answers. Ground with RAG + citations, show uncertainty, add human review for high stakes.</p></div>
+  </div>
+
+  <h2 id="checklist">Pre-demo / pre-merge checklist</h2>
+  <div class="widget"><div class="checks" id="sc"></div><div class="result" id="scr"></div></div>
+
+  <h2 id="privacy">Privacy & compliance quick map</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Domain</th><th>Name it in the interview</th></tr>
+    <tr><td>Any consumer app (India)</td><td>DPDP Act 2023: consent, purpose limitation, right to erasure.</td></tr>
+    <tr><td>EU users</td><td>GDPR; and the EU AI Act's risk tiers for AI systems.</td></tr>
+    <tr><td>Health (US)</td><td>HIPAA: BAAs with vendors, no PHI to non-compliant LLM endpoints.</td></tr>
+    <tr><td>Payments</td><td>PCI DSS: never store card data; use Stripe/Razorpay tokens.</td></tr>
+    <tr><td>Lending / hiring</td><td>Explainability and fairness: adverse-action reasons, bias testing.</td></tr>
+    <tr><td>Kids</td><td>COPPA (US) and parental consent; extra content safety.</td></tr>
+  </table></div>
+<script>
+const C=["No secrets in client code or git history","RLS on every table, tested as a second user","Server-side authorization on every endpoint","Input validated with schemas; size limits","LLM calls server-side, with timeout, validated output and fallback","Rate limits on AI and auth endpoints","No unnecessary PII sent to the model or logs","Human approval for irreversible agent actions","New dependencies verified (exist, maintained, popular)","Tests pass; acceptance criteria verified in browser","/review and /security-review run, issues fixed","README + .env.example updated"];
+const k="vcp-sec"; const s=VCP_STORE.get(k,{});
+const el=document.getElementById("sc");
+el.innerHTML=C.map((t,i)=>`<label><input type="checkbox" data-i="${i}" ${s[i]?"checked":""}> ${t}</label>`).join("");
+function upd(){const n=el.querySelectorAll("input:checked").length;document.getElementById("scr").innerHTML=`<b>${n}/${C.length}</b> ${n===C.length?"Ship it.":"Not yet: fix the unticked items first."}`;}
+el.addEventListener("change",e=>{const x=VCP_STORE.get(k,{});x[e.target.dataset.i]=e.target.checked;VCP_STORE.set(k,x);upd();});upd();
+</script>
+</main>
+</body>
+</html>

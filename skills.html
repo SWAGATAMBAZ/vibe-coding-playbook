@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The skill stack: one per task · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="skills">
+<main>
+  <div class="eyebrow">Claude Code · 02</div>
+  <h1>The skill stack: exactly one pick per task</h1>
+  <p class="lede">There are thousands of Claude Code skills, and most of them are noise or overlap. This is a curated stack: for each job in a product build, <b>one</b> skill, plugin or connector, why it won, and what it replaces so you don't install duplicates.</p>
+  <div class="callout tip"><div class="tag">How picks were chosen</div><p>Official or vendor-maintained first (Anthropic, GitHub, Vercel, Supabase, LangChain, Trail of Bits), then the most-adopted community sets (Superpowers, Matt Pocock, Dean Peters). Two skills that give conflicting instructions for the same job confuse Claude, so each task has one owner. Skills load on demand, so a lean set costs little context; MCP servers cost more, so add those per project.</p></div>
+  <div class="toc" data-auto></div>
+
+  <h2 id="what">Skills vs plugins vs MCP in one minute</h2>
+  <div class="grid">
+    <div class="card"><span class="pill">Skill</span><p>A folder with <code>SKILL.md</code> (+ optional scripts and references). Claude loads it only when the task matches its description. Lives in <code>.claude/skills/</code> (project) or <code>~/.claude/skills/</code> (you). Teaches <i>how</i>.</p></div>
+    <div class="card"><span class="pill hot">Plugin</span><p>An installable bundle of skills, commands, subagents, hooks and/or MCP servers from a marketplace. <code>claude-plugins-official</code> is built in.</p></div>
+    <div class="card"><span class="pill green">MCP server</span><p>A connector that gives Claude <i>tools and live data</i>: your database, GitHub, Figma, a browser. See <a href="mcp.html">MCP & connectors</a>.</p></div>
+    <div class="card"><span class="pill amber">Built-in</span><p>Already in Claude Code: <code>/review</code>, <code>/security-review</code>, plan mode, web search, subagents. Don't install a skill for something built in.</p></div>
+  </div>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="three ways to install">
+    # 1) Plugin marketplaces (from your terminal, or the same commands as /plugin inside a session)
+    claude plugin marketplace add anthropics/skills
+    claude plugin install code-review@claude-plugins-official
+
+    # 2) The open skills CLI (works for any GitHub repo that follows the Agent Skills format)
+    npx skills add vercel-labs/agent-skills --skill web-design-guidelines --agent claude-code
+
+    # 3) Manually: copy a skill folder into .claude/skills/<name>/SKILL.md (project) or ~/.claude/skills/
+  </script>
+
+  <h2 id="stack">The stack, by task</h2>
+  <input type="search" data-filter="#stackTable" placeholder="Filter: e.g. design, database, security, agent, research…">
+  <div class="table-wrap"><table id="stackTable"><thead><tr><th>Task</th><th>The one pick</th><th>Why this one</th><th>Don't also install</th></tr></thead><tbody></tbody></table></div>
+
+  <h2 id="builder">Build your install script</h2>
+  <p>Tick what you need. The script runs from your terminal. <b>Core</b> items are pre-ticked; add the rest per project.</p>
+  <div class="widget">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn" data-preset="core">Core only</button><button class="btn" data-preset="interview">Interview laptop</button><button class="btn" data-preset="ai">AI / agent product</button><button class="btn" data-preset="all">Everything</button><button class="btn" data-preset="none">Clear</button>
+    </div>
+    <div class="checks" id="checks"></div>
+    <div id="scriptOut"></div>
+  </div>
+
+  <h2 id="interviewkit">The interview-laptop kit</h2>
+  <p>If you're allowed your own machine in a live round, install only what speeds up a 45-minute build and keeps quality visible. More than this adds context and surprises.</p>
+  <div class="grid">
+    <div class="card"><h4>Skills</h4><p>frontend-design · web-design-guidelines · grill-me (only if the prompt is vague)</p></div>
+    <div class="card"><h4>Connectors</h4><p>Context7 (correct APIs) · Playwright (verify in a browser) · shadcn (components) · Supabase (if you need auth/DB)</p></div>
+    <div class="card"><h4>Built-ins</h4><p>Plan mode · <code>/review</code> · <code>/security-review</code> · <code>/clear</code></p></div>
+    <div class="card"><h4>Pre-made</h4><p>A scaffolded Next.js + Tailwind + shadcn repo with your <a href="starter.html">CLAUDE.md and commands</a>, so minute 1 is product thinking, not <code>npm install</code>.</p></div>
+  </div>
+
+  <h2 id="skip">What we deliberately left out (and why)</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Popular option</th><th>Why it's not in the core stack</th></tr>
+    <tr><td>Full <b>Superpowers</b> plugin</td><td>Excellent, but its brainstorming → writing-plans → executing-plans chain overlaps with Spec Kit. We take only its TDD and debugging skills. If you prefer Superpowers' flow, use it <i>instead of</i> Spec Kit, not with it.</td></tr>
+    <tr><td><b>feature-dev</b> plugin</td><td>A guided feature workflow (clarify → explore → architect → implement → review). Same job as Spec Kit; pick one.</td></tr>
+    <tr><td><b>pr-review-toolkit</b></td><td>Six parallel review agents; great for big PRs but heavier. <code>code-review</code> + <code>/review</code> covers prototypes and most PRs.</td></tr>
+    <tr><td><b>phuryn/pm-skills</b>, Matt Pocock's <b>to-prd</b></td><td>Both write PRDs. We use Dean Peters' <code>prd-development</code> as the single PRD owner; it's PM-first and comes from a 70-skill PM library you can pull more from.</td></tr>
+    <tr><td><b>Trail of Bits</b> skills</td><td>Professional-grade audits (CodeQL, Semgrep, variant analysis). Add when you have a real product handling money or sensitive data, not for prototypes.</td></tr>
+    <tr><td>Exa / Tavily / Brave MCP</td><td>Firecrawl covers search + scrape; Claude Code also has built-in web search. Add Exa only if you need semantic discovery at scale.</td></tr>
+    <tr><td>"1,000+ skills" mega-bundles</td><td>Conflicting instructions and unknown authors. Install skills individually, from sources you trust, and read the SKILL.md first.</td></tr>
+  </table></div>
+  <div class="callout warn"><div class="tag">Security note</div><p>Skills can include scripts, and MCP servers can read and act on your data. Prefer official or well-known sources, read <code>SKILL.md</code> before installing, give MCP servers the least access they need, and never paste production keys into a session.</p></div>
+
+  <h2 id="custom">When to write your own skill</h2>
+  <p>When you've explained the same thing to Claude three times: your PRD format, your company's design system, how your team writes tickets, your demo script. Run the <code>skill-creator</code> skill ("help me create a skill for…"); it scaffolds the folder, writes a description that triggers at the right time, and can test it. Keep each skill to one job with a sharp <code>description</code>.</p>
+  <script type="text/plain" class="snippet" data-lang="md" data-title=".claude/skills/demo-script/SKILL.md (example custom skill)">
+    ---
+    name: demo-script
+    description: Writes a 90-second product demo script for the current prototype. Use when the user asks to prepare a demo, walkthrough or interview wrap-up.
+    ---
+    1. Read specs/*/spec.md to get the user, pain and success metric.
+    2. Walk the happy path in the running app (use Playwright if available) and note each step.
+    3. Output: user + pain (1 sentence) → 4–6 click steps with what the viewer sees → one edge case
+       we handle → success metric + guardrail → what we'd test next. Plain spoken English, ≤ 220 words.
+  </script>
+
+<script>
+const S = [
+ // [id, group, task, pick, kind, why, dontAlso, install, core, presets]
+ ["grill","Plan","Clarify vague requirements","grill-me · mattpocock/skills","skill","Tiny skill that flips the interview: Claude questions you one decision at a time, with a recommended answer each time, until the build is unambiguous.","Superpowers brainstorming","npx skills add mattpocock/skills --skill grill-me --agent claude-code",1,"interview ai"],
+ ["prd","Plan","Write the PRD","prd-development · deanpeters/Product-Manager-Skills","skill","PM-first PRD flow: problem → personas → solution → success criteria, built on battle-tested PM methods. Same library has a product-sense interview-answer skill.","phuryn create-prd, mattpocock to-prd","npx skills add deanpeters/Product-Manager-Skills --skill prd-development --agent claude-code",1,"ai"],
+ ["speckit","Plan","Spec → plan → tasks → implement","GitHub Spec Kit (specify CLI)","commands","The spec-driven backbone: /speckit.constitution, specify, clarify, plan, tasks, analyze, implement. Works across 20+ agents, writes everything to specs/.","Superpowers writing-plans, feature-dev","uv tool install specify-cli --from git+https://github.com/github/spec-kit.git && specify init . --ai claude",1,"ai"],
+ ["firecrawl","Plan","Web research & scraping (competitors, docs, markets)","Firecrawl MCP","mcp","Search + scrape + crawl in one connector; returns clean markdown. Pair with built-in web search.","Exa, Tavily, Brave MCP","claude mcp add --transport http firecrawl https://mcp.firecrawl.dev/v2/mcp-oauth",0,"ai"],
+ ["context7","Plan","Up-to-date library docs","Context7 MCP","mcp","Pulls version-specific docs into context so Claude stops inventing APIs for fast-moving frameworks.","—","claude mcp add context7 -- npx -y @upstash/context7-mcp",1,"interview ai"],
+ ["fe","Design","Distinctive UI design","frontend-design · Anthropic","plugin","The most-installed skill in Anthropic's repo. Pushes deliberate typography, layout, colour and motion instead of generic AI look.","Other 'UI/UX pro' design skills","claude plugin install frontend-design@claude-plugins-official",1,"interview ai"],
+ ["shadcn","Design","UI components","shadcn MCP","mcp","Browse, search and install real shadcn/ui (and compatible registry) components instead of hand-rolled ones.","Other component MCPs","pnpm dlx shadcn@latest mcp init --client claude",0,"interview ai"],
+ ["figma","Design","Figma designs → code","Figma MCP (official, remote)","mcp","Reads frames, components and variables so code matches the design and its tokens.","—","claude mcp add --transport http figma https://mcp.figma.com/mcp",0,""],
+ ["reactbp","Design","React / Next.js performance","react-best-practices · vercel-labs/agent-skills","skill","Vercel Engineering's prioritised rules: kill waterfalls, shrink bundles, avoid re-renders.","Generic 'React expert' skills","npx skills add vercel-labs/agent-skills --skill react-best-practices --agent claude-code",0,"ai"],
+ ["wdg","Design","UI / UX / accessibility audit","web-design-guidelines · vercel-labs/agent-skills","skill","Audits UI code against 100+ rules: accessibility, focus, forms, motion, dark mode. Trigger: 'review my UI'.","Separate a11y skills","npx skills add vercel-labs/agent-skills --skill web-design-guidelines --agent claude-code",1,"interview ai"],
+ ["supabase","Backend","Database, auth, storage","Supabase MCP (official, remote)","mcp","Postgres + auth + storage + row-level security from chat; knows RLS and edge functions, unlike a generic Postgres MCP.","Generic Postgres MCP","claude mcp add --transport http supabase https://mcp.supabase.com/mcp",1,"interview ai"],
+ ["pgbp","Backend","Schema & SQL quality","supabase-postgres-best-practices · supabase/agent-skills","skill","Supabase's prioritised Postgres rules: indexes, query design, RLS, schema.","Other SQL skills","npx skills add supabase/agent-skills --skill supabase-postgres-best-practices --agent claude-code",0,"ai"],
+ ["vercel","Backend","Deploy, env vars, logs","Vercel MCP (official, remote)","mcp","Manage projects and deployments and read build/runtime logs. The Vercel CLI works too.","Netlify/other deploy skills (pick your host)","claude mcp add --transport http vercel https://mcp.vercel.com",0,"ai"],
+ ["stripe","Backend","Payments & subscriptions","Stripe MCP (official, remote)","mcp","Products, prices, customers and payment links via tools, plus docs search. Use test mode.","—","claude mcp add --transport http stripe https://mcp.stripe.com",0,""],
+ ["claudeapi","AI","Build on the Claude API","claude-api · anthropics/skills","skill","Anthropic's own guidance for the API and SDKs: tool use, streaming, prompt caching, structured outputs.","Generic 'LLM app' skills","npx skills add anthropics/skills --skill claude-api --agent claude-code",0,"ai"],
+ ["langchain","AI","Agents with LangGraph / LangChain + evals","langchain-ai/langchain-skills","skill","Official skills for LangChain, LangGraph (persistence, human-in-the-loop), Deep Agents and LangSmith evals. LangChain reports a large pass-rate jump on its eval set with them.","Third-party LangGraph skills","npx skills add langchain-ai/langchain-skills --skill '*' --agent claude-code --yes",0,"ai"],
+ ["n8n","AI","n8n automations built by Claude","n8n-mcp + n8n-skills · czlonkowski","mcp+skills","The MCP knows n8n's node catalog and templates; the skills teach expressions, patterns and validation so workflows don't fail on import.","Raw n8n API calls","npx n8n-mcp   # then: claude plugin marketplace add czlonkowski/n8n-skills",0,"ai"],
+ ["mcpb","AI","Build your own MCP server","mcp-builder · anthropics/skills","skill","Guides you through designing tools and building a server in Python (FastMCP) or TypeScript.","—","npx skills add anthropics/skills --skill mcp-builder --agent claude-code",0,"ai"],
+ ["tdd","Quality","Test-driven development","test-driven-development · obra/superpowers","skill","Enforces red → green → refactor: write a failing test, watch it fail, write minimal code. The fix for 'it says done but it's broken'.","mattpocock tdd","npx skills add obra/superpowers --skill test-driven-development --agent claude-code",1,"ai"],
+ ["debug","Quality","Root-cause debugging","systematic-debugging · obra/superpowers","skill","4-phase root-cause process; no guess-and-patch loops.","mattpocock diagnose","npx skills add obra/superpowers --skill systematic-debugging --agent claude-code",1,"ai"],
+ ["playwright","Quality","Verify in a real browser / E2E","Playwright MCP (Microsoft)","mcp","Claude clicks through your app, reads the console and screenshots. Turns 'should work' into 'I checked'.","webapp-testing skill, Chrome DevTools MCP","claude mcp add playwright -- npx @playwright/mcp@latest",1,"interview ai"],
+ ["review","Quality","Code review","code-review plugin + built-in /review","plugin","Structured, scored review of your diff or PR. Cheap enough to keep always on.","pr-review-toolkit (add for very large PRs)","claude plugin install code-review@claude-plugins-official",1,"ai"],
+ ["sec","Quality","Security while coding","security-guidance plugin + built-in /security-review","plugin","Runs as hooks while Claude writes: flags secrets, injection, auth bypass patterns. Run /security-review before every demo or merge.","Trail of Bits (add for production audits)","claude plugin install security-guidance@claude-plugins-official",1,"ai"],
+ ["commit","Quality","Commits & pull requests","commit-commands plugin","plugin","/commit and commit-push-pr with clean messages.","Other git skills","claude plugin install commit-commands@claude-plugins-official",0,"ai"],
+ ["github","Ops","Issues, PRs, CI from GitHub","GitHub MCP (official, remote)","mcp","Read issues, review PRs, read failed CI logs, file follow-ups. Or just use the gh CLI.","—","claude mcp add --transport http github https://api.githubcopilot.com/mcp/ --header \"Authorization: Bearer $GITHUB_PAT\"",0,"ai"],
+ ["sentry","Ops","Production errors","Sentry MCP (official, remote)","mcp","Pull the real stack trace and affected users into the debugging session.","—","claude mcp add --transport http sentry https://mcp.sentry.dev/mcp",0,""],
+ ["linear","Ops","Tickets & roadmap","Linear MCP (or Atlassian for Jira)","mcp","Turn PRD tasks into tickets and update status. Install the one your team uses, not both.","Both Linear and Jira","claude mcp add --transport http linear https://mcp.linear.app/mcp",0,""],
+ ["notion","Ops","Docs & knowledge base","Notion MCP (official, remote)","mcp","Read specs and research, write PRDs and release notes back.","—","claude mcp add --transport http notion https://mcp.notion.com/mcp",0,""],
+ ["office","PM output","Decks, docs, sheets, PDFs","docx · pptx · xlsx · pdf · anthropics/skills","skill","Proper Office files for stakeholder deliverables (exec deck, PRD in Word, metrics sheet).","Other document skills","claude plugin marketplace add anthropics/skills   # then /plugin to pick document-skills",0,""],
+ ["creator","PM output","Write your own skills","skill-creator · anthropics/skills","skill","Scaffolds, describes and tests new skills so they trigger reliably.","write-a-skill, writing-skills","npx skills add anthropics/skills --skill skill-creator --agent claude-code",0,"ai"],
+];
+const tb=document.querySelector("#stackTable tbody");
+tb.innerHTML=S.map(s=>`<tr data-row><td><span class="pill ${s[1]==="Quality"?"red":s[1]==="Design"?"hot":s[1]==="Backend"?"green":s[1]==="AI"?"amber":""}">${s[1]}</span><br><b>${s[2]}</b></td><td><b>${s[3]}</b><br><span class="pill" style="margin-top:4px">${s[4]}</span>${s[8]?' <span class="pill green">core</span>':""}</td><td>${s[5]}</td><td>${s[6]}</td></tr>`).join("");
+const ch=document.getElementById("checks");
+ch.innerHTML=S.map(s=>`<label><input type="checkbox" value="${s[0]}" ${s[8]?"checked":""}> <span><b>${s[2]}</b><br><span style="color:var(--muted);font-size:12.5px">${s[3]}</span></span></label>`).join("");
+function out(){
+  const sel=[...ch.querySelectorAll("input:checked")].map(i=>i.value);
+  const items=S.filter(s=>sel.includes(s[0]));
+  const needsOfficial=items.some(s=>s[7].includes("@claude-plugins-official"));
+  let txt="#!/usr/bin/env bash\n# Vibe Coding Playbook: install script (run from your project root)\n# Generated for "+items.length+" tasks. Remote MCP servers ask you to log in: run /mcp inside Claude Code.\n";
+  if(needsOfficial) txt+="\n# Official marketplace (usually already added)\nclaude plugin marketplace add anthropics/claude-plugins-official\n";
+  let g="";
+  items.forEach(s=>{ if(s[1]!==g){g=s[1]; txt+="\n# ── "+g+" ──\n";} txt+="# "+s[2]+" → "+s[3]+"\n"+s[7]+"\n"; });
+  const host=document.getElementById("scriptOut");
+  host.innerHTML=""; const sc=document.createElement("script"); sc.type="text/plain"; sc.className="snippet"; sc.dataset.lang="bash"; sc.dataset.title="install-stack.sh"; sc.textContent=txt; host.appendChild(sc); VCP_buildCode(host);
+}
+ch.addEventListener("change",out);
+document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>{
+  const p=b.dataset.preset; ch.querySelectorAll("input").forEach(i=>{const s=S.find(x=>x[0]===i.value); i.checked = p==="all" || (p==="core"&&s[8]) || (p!=="none"&&p!=="core"&&p!=="all"&&s[9].split(" ").includes(p));}); out();
+}));
+document.addEventListener("vcp:ready",out);
+</script>
+  <div class="callout tip"><div class="tag">Sources</div><p><a href="https://github.com/anthropics/skills">anthropics/skills</a> · <a href="https://github.com/obra/superpowers">obra/superpowers</a> · <a href="https://github.com/mattpocock/skills">mattpocock/skills</a> · <a href="https://github.com/deanpeters/Product-Manager-Skills">deanpeters/Product-Manager-Skills</a> · <a href="https://github.com/github/spec-kit">github/spec-kit</a> · <a href="https://github.com/vercel-labs/agent-skills">vercel-labs/agent-skills</a> · <a href="https://github.com/supabase/agent-skills">supabase/agent-skills</a> · <a href="https://blog.langchain.com/langchain-skills">LangChain Skills</a> · <a href="https://github.com/czlonkowski/n8n-skills">czlonkowski/n8n-skills</a> · <a href="https://github.com/trailofbits/skills">trailofbits/skills</a> · <a href="https://developertoolkit.ai/en/ecosystem/plugins/anthropic-dev-plugins/">Anthropic developer plugins overview</a></p></div>
+</main>
+</body>
+</html>

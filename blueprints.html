@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>18 solution blueprints · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="blueprints">
+<main>
+  <div class="eyebrow">Solutions · 02</div>
+  <h1>18 solution blueprints, by industry</h1>
+  <p class="lede">For each product type: the MVP slice, the data model, the AI pattern, the connectors, the metric and the trap interviewers wait for you to spot. Use them to scope any prompt in under 7 minutes.</p>
+  <div class="callout tip"><div class="tag">The pattern behind all 18</div><p>Almost every AI product is one of six shapes: <b>classify/extract</b> (structured output), <b>retrieve & answer</b> (RAG), <b>recommend/personalise</b> (stats → ranking → LLM phrasing), <b>summarise/generate</b>, <b>copilot</b> (AI drafts, human decides), or <b>agent</b> (AI acts with tools). Name the shape first, and the architecture follows.</p></div>
+  <input type="search" data-filter="#bp" placeholder="Filter: fintech, RAG, agent, voice, health…">
+  <div id="bp"></div>
+<script>
+const B=[
+ ["Fintech","Smart expense categoriser","Classify/extract","Freelancers lose deductions and hours categorising receipts.","Upload/connect transactions → auto-category + 'deductible?' flag → one-tap correction.","transactions, categories, user_rules, corrections","LLM classification with structured output + user rules first; corrections become few-shot examples per user.","Plaid/Setu AA (bank data), Stripe, Supabase","% transactions auto-categorised without correction","Never give tax advice; show confidence and let users override. Corrections must override the model."],
+ ["Banking","Fraud-alert explainer","Copilot","Customers panic when cards are blocked and flood the call centre.","Push alert → plain-language why → 'Was this you?' → unblock or report.","alerts, transactions, decisions, user_responses","Existing fraud model decides; LLM only explains with templated reason codes.","Core banking APIs, Twilio/WhatsApp, Sentry","Self-resolution rate; call-centre contacts per alert","Don't reveal model features that let fraudsters adapt; explanations must be approved templates."],
+ ["Lending","Loan pre-qualification with reasons","Classify + explain","Applicants don't know why they're rejected or what to fix.","Short form → indicative decision → top reasons + what would change it.","applications, features, decisions, reason_codes","Interpretable model (GBM + SHAP) for the decision; LLM rewrites reason codes into plain language.","Credit bureau API, Supabase, PostHog","Completed applications; approval quality (defaults)","Fair-lending and adverse-action rules: LLM must not invent reasons; bias testing across groups."],
+ ["E-commerce","Outfit / shopping assistant","Recommend","Shoppers abandon carts unsure what goes together.","From cart item → 3 complete looks from catalogue → add all to cart.","products, embeddings, sessions, interactions","Image+text embeddings (pgvector) for candidates → rules for stock/size → LLM writes the 'why it works'.","Shopify/commerce API, Stripe, PostHog","Attach rate (items per order); add-to-cart from suggestions","Cold start, out-of-stock suggestions, and never recommending what they just returned."],
+ ["E-commerce","Review insights for sellers","Summarise","Sellers can't read 5,000 reviews to find what to fix.","Upload/export reviews → themes with counts and trend → top 3 fixes.","reviews, review_embeddings, themes, theme_assignments","Embed + cluster, LLM names clusters and writes fixes; counts come from data, not the LLM.","Marketplace APIs, Firecrawl, Notion","Seller-reported fix actions; return-rate change","A single 'sentiment score' hides the actionable detail; LLM must not invent counts."],
+ ["SaaS","Onboarding copilot","Agent (light)","New admins don't reach first value and churn.","Checklist that the copilot completes with them: import data, invite team, first report.","workspaces, onboarding_steps, events","Router: detect current step from events → guided actions via app APIs with confirmation.","Product API, Intercom/HubSpot, PostHog","Time to first value; activation rate","Enterprise data residency: some customers forbid third-party LLMs → model-agnostic gateway, opt-out."],
+ ["Customer support","Support copilot + triage agent","Copilot / agent","Agents spend minutes per ticket searching and drafting.","Ticket → category + priority → suggested reply with sources → agent edits & sends.","tickets, kb_chunks, drafts, outcomes","RAG over help centre (hybrid + rerank) + routing; drafts, never auto-send at first.","Zendesk/Intercom, Linear, Slack, n8n","Handle time; first-contact resolution; CSAT","Agents rubber-stamp drafts: track edit distance, sample QA, show sources."],
+ ["Enterprise / HR","Policy assistant (RAG)","Retrieve & answer","Employees can't find answers in 200 pages of policy.","Ask in Slack → answer with citations → 'talk to HR' handoff.","documents, chunks, versions, questions, feedback","RAG with version metadata and access filters; refuse when not found.","Google Drive/SharePoint, Slack, Notion","Deflected HR tickets; answer helpfulness","Stale versions and permission leaks (an intern seeing exec comp policy). Filter by ACL at retrieval."],
+ ["Healthcare","Doctor-visit prep summary","Summarise","Patients forget symptoms and timelines in 10-minute visits.","Daily symptom log → one-page summary with timeline and questions to ask.","symptom_logs, medications, summaries","LLM summarisation with strict template; no diagnosis; clinician-reviewed wording.","Synthetic data only in prototype; FHIR APIs later","Summaries brought to visits; patient-reported usefulness","No diagnosis or treatment advice; HIPAA/DPDP; emergency-symptom escalation message."],
+ ["Insurance","Claims intake assistant","Agent + multimodal","First notice of loss takes days of back-and-forth.","Guided chat → photos + details → pre-filled claim → adjuster review.","claims, media, extracted_fields, fraud_signals","Vision extraction + checklist agent; fraud signals (reused photos via image hashing) flagged, not decided.","Storage (S3/R2), CRM, Twilio","Time to complete claim; adjuster touch time","Fake/reused photos; AI must not approve or deny claims; explainable flags only."],
+ ["HR tech","Resume screener copilot","Classify + explain","Recruiters skim hundreds of resumes per role.","JD → must-haves → ranked shortlist with evidence quotes per criterion.","jobs, criteria, candidates, evidence, decisions","Structured extraction against explicit criteria; LLM cites evidence; human makes decisions.","ATS (Greenhouse/Lever), Supabase","Recruiter time per hire; quality-of-hire proxy","Bias: remove names/photos/age proxies, audit outcomes by group, never auto-reject (NYC AEDT-style laws)."],
+ ["EdTech","Adaptive study planner/tutor","Personalise","Students study what they already know.","Diagnostic quiz → mastery map → daily plan → spaced review.","students, skills, attempts, mastery, plans","Knowledge tracing (simple Elo/BKT) decides what's next; LLM explains and generates practice.","LMS APIs, Supabase, PostHog","Mastery gain per hour; D7 retention","Minors: consent, safety filters, no data selling; LLM-generated questions must be verified."],
+ ["Logistics","Driver issue reporting (voice)","Agent + voice","Drivers can't type while driving; issues are reported late.","Push-to-talk → transcribe → structured incident → route to ops.","incidents, routes, drivers, audio","Speech-to-text → LLM extraction to schema → rules route by severity; offline queue.","Twilio/voice API, n8n, Slack, Maps","Time from incident to ops action","Noisy audio and patchy network: confirm back key fields; work offline and sync."],
+ ["Retail","Reorder recommendations dashboard","Forecast + explain","Store managers over- and under-stock.","Weekly list: what to reorder, how much, why; one-click PO draft.","sales, inventory, forecasts, orders","Classical forecasting (seasonal baseline / GBM) + business rules; LLM writes the why.","ERP/POS APIs, warehouse connector, email","Stockouts and overstock value","Holidays and promos break forecasts; show uncertainty; manager override always wins."],
+ ["Data / BI","Ask-your-data bot (text-to-SQL)","Agent (read-only)","PMs wait days for analysts to answer simple questions.","Question in Slack → SQL + chart + explanation → 'verified by analyst' badge.","semantic_layer, queries, feedback","Text-to-SQL over a curated semantic layer; read-only role; query cost limits; show SQL.","BigQuery/Snowflake MCP, Slack","Questions answered without an analyst; answer accuracy","Full-table scans, wrong joins, confident wrong numbers. Use metric definitions, not raw tables."],
+ ["Sales","Call coach","Summarise + score","Reps don't know what top performers do differently.","Call recording → summary, talk ratio, objections, next steps → CRM update.","calls, transcripts, scores, crm_updates","Transcription + rubric-based LLM scoring with quoted evidence.","Gong-style recording, HubSpot/Salesforce, Slack","Win rate; ramp time for new reps","Surveillance feelings: coach-only visibility, opt-in, focus on skills not ranking."],
+ ["Travel","Budget trip planner & booker","Agent with tools","Planning a trip across 10 tabs takes hours.","Constraints → itinerary options → hold bookings → user confirms payment.","trips, constraints, options, bookings","Orchestrator-workers: flights/hotels/activities workers; evaluator checks budget and constraints.","Travel APIs, Stripe, Maps, email","Bookings per planning session; plan acceptance","Never pay without explicit confirmation; prices change between search and book; idempotent bookings."],
+ ["Media / creators","Long video → short clips","Generate (multimodal)","Creators spend hours cutting shorts.","Upload → top 5 moments with captions and hooks → export.","videos, transcripts, segments, exports","Transcript + engagement heuristics to pick segments; LLM writes hooks; ffmpeg renders.","Storage (R2/S3), queue + workers","Clips published per upload; views per clip","Long processing → async jobs with progress; copyrighted music detection; cost per minute of video."],
+];
+const host=document.getElementById("bp");
+host.innerHTML=B.map((b,i)=>`<details data-row ${i===0?"open":""}><summary><span class="pill">${b[0]}</span> <span class="pill amber">${b[2]}</span> ${b[1]}</summary>
+<div class="table-wrap"><table>
+<tr><td style="width:150px"><b>Problem</b></td><td>${b[3]}</td></tr>
+<tr><td><b>MVP slice</b></td><td>${b[4]}</td></tr>
+<tr><td><b>Data model</b></td><td><code>${b[5].split(", ").join("</code> · <code>")}</code></td></tr>
+<tr><td><b>AI pattern</b></td><td>${b[6]}</td></tr>
+<tr><td><b>Connectors</b></td><td>${b[7]}</td></tr>
+<tr><td><b>North-star</b></td><td>${b[8]}</td></tr>
+<tr><td><b>⚠️ The trap</b></td><td>${b[9]}</td></tr>
+</table></div></details>`).join("");
+</script>
+
+  <h2 id="universal">The universal build order</h2>
+  <ol>
+    <li>Happy path with mock data and a stubbed AI response.</li>
+    <li>Deterministic logic (rules, stats, filters) with tests.</li>
+    <li>Real AI call: server-side, structured, validated, with fallback.</li>
+    <li>Persistence + auth + RLS.</li>
+    <li>Human-in-the-loop where actions are consequential.</li>
+    <li>Metrics events, then polish.</li>
+  </ol>
+</main>
+</body>
+</html>

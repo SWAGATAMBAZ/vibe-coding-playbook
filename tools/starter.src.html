@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Starter kit · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="starter">
+<main>
+  <div class="eyebrow">Claude Code · 05</div>
+  <h1>Starter kit: the files you drop into every repo</h1>
+  <p class="lede">A CLAUDE.md template, 7 custom commands, 3 hooks, a reviewer subagent, shared connectors and a one-shot installer. Together they turn the playbook into muscle memory: <code>/kickoff</code> → <code>/slice</code> → <code>/verify</code> → <code>/ship</code> → <code>/demo</code>.</p>
+  <div class="callout tip"><div class="tag">Get the files</div><p>They're all in this site's repo under <a href="https://github.com/SWAGATAMBAZ/vibe-coding-playbook/tree/main/starter-kit"><code>starter-kit/</code></a>. Clone the repo and copy the folder's contents (including the hidden <code>.claude/</code>) into your project root, or copy each file from below.</p></div>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="copy into a new project">
+    git clone --depth 1 https://github.com/SWAGATAMBAZ/vibe-coding-playbook /tmp/vcp
+    cp -r /tmp/vcp/starter-kit/. ./my-app/ && cd my-app
+    chmod +x .claude/hooks/*.sh install.sh && ./install.sh
+  </script>
+  <div class="toc" data-auto></div>
+
+  <h2 id="flow">The command flow</h2>
+  <div class="flow">
+    <div class="node hl">/kickoff<small>clarify → spec.md → tasks.md</small></div><span class="arrow">→</span>
+    <div class="node hl">/slice<small>next task, test-first, commit</small></div><span class="arrow">↺</span>
+    <div class="node">/verify<small>prove acceptance criteria</small></div><span class="arrow">→</span>
+    <div class="node">/ship<small>review + security + PR</small></div><span class="arrow">→</span>
+    <div class="node hl">/demo<small>script, metrics, risks</small></div>
+  </div>
+  <p>Plus <code>/metrics</code> to instrument success and <code>/handoff</code> before you <code>/clear</code>. Each command orchestrates skills you already installed (grill-me style questioning, TDD, Playwright, code review) rather than duplicating them. If you use Spec Kit instead, swap <code>/kickoff</code> for the <code>/speckit.*</code> commands and keep the rest.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Kind</th><th>Where it lives</th><th>How it runs</th></tr>
+    <tr><td>Custom command</td><td><code>.claude/commands/name.md</code> (team) or <code>~/.claude/commands/</code> (you)</td><td>You type <code>/name args</code>; <code>$ARGUMENTS</code> is replaced. Frontmatter sets description and argument hint.</td></tr>
+    <tr><td>Skill</td><td><code>.claude/skills/name/SKILL.md</code></td><td>Claude loads it when the description matches; also invocable as <code>/name</code>.</td></tr>
+    <tr><td>Subagent</td><td><code>.claude/agents/name.md</code></td><td>Own context + restricted tools; "use the reviewer agent on this diff".</td></tr>
+    <tr><td>Hook</td><td><code>.claude/settings.json</code> → <code>hooks</code></td><td>Deterministic shell command on an event; exit code 2 blocks and tells Claude why.</td></tr>
+  </table></div>
+
+  <h2 id="claudemd">CLAUDE.md</h2>
+  {{FILE:CLAUDE.md|md}}
+
+  <h2 id="commands">Custom commands</h2>
+  <div data-tabs>
+    <div class="tabs"><button>/kickoff</button><button>/slice</button><button>/verify</button><button>/ship</button><button>/demo</button><button>/metrics</button><button>/handoff</button></div>
+    <div class="tab-panel">{{FILE:.claude/commands/kickoff.md|md}}</div>
+    <div class="tab-panel">{{FILE:.claude/commands/slice.md|md}}</div>
+    <div class="tab-panel">{{FILE:.claude/commands/verify.md|md}}</div>
+    <div class="tab-panel">{{FILE:.claude/commands/ship.md|md}}</div>
+    <div class="tab-panel">{{FILE:.claude/commands/demo.md|md}}</div>
+    <div class="tab-panel">{{FILE:.claude/commands/metrics.md|md}}</div>
+    <div class="tab-panel">{{FILE:.claude/commands/handoff.md|md}}</div>
+  </div>
+
+  <h2 id="hooks">Settings & hooks</h2>
+  <p>Hooks are the guarantees. CLAUDE.md says "run tests before you finish"; the Stop hook makes it true. Three hooks cover most of the risk in vibe-coded work:</p>
+  <div class="table-wrap"><table>
+    <tr><th>Event</th><th>Hook</th><th>Why</th></tr>
+    <tr><td><code>PreToolUse</code> (Bash)</td><td>block-dangerous.sh</td><td>Stops destructive git, deletes, destructive SQL, printing secrets, curl | bash.</td></tr>
+    <tr><td><code>PostToolUse</code> (Edit|Write)</td><td>format.sh</td><td>Consistent formatting with zero tokens spent.</td></tr>
+    <tr><td><code>Stop</code></td><td>tests-must-pass.sh</td><td>Claude can't declare victory while tests fail. Checks <code>stop_hook_active</code> to avoid loops.</td></tr>
+  </table></div>
+  <div data-tabs>
+    <div class="tabs"><button>settings.json</button><button>block-dangerous.sh</button><button>format.sh</button><button>tests-must-pass.sh</button></div>
+    <div class="tab-panel">{{FILE:.claude/settings.json|json}}</div>
+    <div class="tab-panel">{{FILE:.claude/hooks/block-dangerous.sh|bash}}</div>
+    <div class="tab-panel">{{FILE:.claude/hooks/format.sh|bash}}</div>
+    <div class="tab-panel">{{FILE:.claude/hooks/tests-must-pass.sh|bash}}</div>
+  </div>
+  <p>Other useful hook ideas: a <code>SessionStart</code> hook that injects <code>HANDOFF.md</code>; a <code>Notification</code> hook that pings you when Claude needs input; a <code>UserPromptSubmit</code> hook that appends the current spec path. See the hooks reference in the Claude Code docs.</p>
+
+  <h2 id="agent">Reviewer subagent</h2>
+  {{FILE:.claude/agents/reviewer.md|md}}
+
+  <h2 id="mcpjson">Shared connectors (.mcp.json)</h2>
+  {{FILE:.mcp.json|json}}
+
+  <h2 id="install">One-shot installer</h2>
+  {{FILE:install.sh|bash}}
+  <p>Want a different set? Use the <a href="skills.html#builder">install-script builder</a> on the skills page.</p>
+</main>
+</body>
+</html>

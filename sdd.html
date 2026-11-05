@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spec-driven development · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="sdd">
+<main>
+  <div class="eyebrow">Claude Code · 04</div>
+  <h1>Spec-driven development: where PMs have the edge</h1>
+  <p class="lede">Vibe coding guesses; spec-driven development (SDD) decides first. The spec becomes the source of truth that drives the plan, the tasks, the code and the review. It's the PM's natural home, and the single biggest quality upgrade you can make.</p>
+  <div class="toc" data-auto></div>
+
+  <h2 id="why">Why specs beat vibes</h2>
+  <div class="table-wrap"><table>
+    <tr><th></th><th>Pure vibe coding</th><th>Spec-driven</th></tr>
+    <tr><td>Starting point</td><td>"Build me a habit tracker"</td><td>A spec: user, stories, acceptance criteria, out of scope</td></tr>
+    <tr><td>Who decides</td><td>The model fills gaps with guesses</td><td>You decide; the model asks when unclear</td></tr>
+    <tr><td>Big features</td><td>Drifts, rewrites, "looks right but doesn't work"</td><td>Small tasks, each verifiable against the spec</td></tr>
+    <tr><td>Review</td><td>"Does it look ok?"</td><td>"Does it meet acceptance criteria #1–5?"</td></tr>
+    <tr><td>Handover</td><td>Code only</td><td>Spec + plan + tasks + code + tests: an engineer can take over</td></tr>
+  </table></div>
+
+  <h2 id="pipeline">The pipeline</h2>
+  <div class="flow">
+    <div class="node">Constitution<small>project principles</small></div><span class="arrow">→</span>
+    <div class="node hl">Specify<small>what & why</small></div><span class="arrow">→</span>
+    <div class="node">Clarify<small>resolve ambiguity</small></div><span class="arrow">→</span>
+    <div class="node hl">Plan<small>how: stack, data, APIs</small></div><span class="arrow">→</span>
+    <div class="node">Tasks<small>small, ordered, testable</small></div><span class="arrow">→</span>
+    <div class="node">Analyze<small>consistency check</small></div><span class="arrow">→</span>
+    <div class="node hl">Implement<small>task by task, verify</small></div>
+  </div>
+  <p>Each step writes a file, and you review each file before moving on. Specs describe <b>what and why</b> (no tech stack); the plan describes <b>how</b>.</p>
+
+  <h2 id="speckit">GitHub Spec Kit with Claude Code</h2>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="setup (needs Python 3.11+ and uv)">
+    uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+    specify init my-app --ai claude        # or, inside an existing repo:  specify init . --ai claude
+    cd my-app && claude                    # the /speckit.* commands are now available
+  </script>
+  <div class="table-wrap"><table>
+    <tr><th>Command</th><th>You give it</th><th>It writes</th><th>Your review question</th></tr>
+    <tr><td><code>/speckit.constitution</code></td><td>Principles: quality, testing, UX, performance, privacy</td><td><code>.specify/memory/constitution.md</code></td><td>Would I reject a PR that broke these?</td></tr>
+    <tr><td><code>/speckit.specify</code></td><td>The feature in product language, no stack</td><td><code>specs/001-x/spec.md</code> + a feature branch</td><td>Are the user, stories and acceptance criteria right? What's out of scope?</td></tr>
+    <tr><td><code>/speckit.clarify</code></td><td>(nothing: it asks you)</td><td>Answers merged into the spec</td><td>Did it surface the questions an engineer would ask?</td></tr>
+    <tr><td><code>/speckit.plan</code></td><td>Your stack and constraints</td><td><code>plan.md</code>, <code>research.md</code>, <code>data-model.md</code>, <code>contracts/</code>, <code>quickstart.md</code></td><td>Is this the simplest architecture that meets the spec?</td></tr>
+    <tr><td><code>/speckit.tasks</code></td><td>(reads the plan)</td><td><code>tasks.md</code> with ordered, parallelisable tasks</td><td>Is each task small and testable? Is the order right?</td></tr>
+    <tr><td><code>/speckit.analyze</code></td><td>—</td><td>Cross-artifact consistency report</td><td>Any requirement with no task, or task with no requirement?</td></tr>
+    <tr><td><code>/speckit.checklist</code></td><td>A quality area (UX, security…)</td><td>A checklist to validate requirements</td><td>Are the requirements themselves complete and testable?</td></tr>
+    <tr><td><code>/speckit.implement</code></td><td>—</td><td>Code, task by task</td><td>Do tests pass? Does it meet each acceptance criterion?</td></tr>
+  </table></div>
+
+  <h2 id="example">Example: what you'd type</h2>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="inside Claude Code">
+    /speckit.constitution Mobile-first, accessible (WCAG AA). Every feature ships with tests for its
+    acceptance criteria. User data is private by default: row-level security on every table, no PII
+    sent to LLMs. Prefer boring, well-documented libraries. p95 page load under 2s.
+
+    /speckit.specify Build "Nudge", an AI personalization tracker. A user logs daily check-ins (mood 1–5,
+    energy 1–5, sleep hours, a free-text note, and which habits they did). After 7 check-ins the app shows
+    one personalised micro-suggestion per day, with a one-line "why" based on their own patterns, and lets
+    them accept, snooze or dismiss it. Out of scope for v1: social features, wearables, notifications.
+
+    /speckit.clarify
+
+    /speckit.plan Next.js App Router + TypeScript + Tailwind + shadcn/ui. Supabase for Postgres, auth and
+    RLS. Suggestions generated server-side with the Claude API, structured JSON validated with zod,
+    cached per user per day. Deploy on Vercel.
+
+    /speckit.tasks
+    /speckit.analyze
+    /speckit.implement
+  </script>
+  <p>The full worked version of this product is on the <a href="personalization.html">personalization tracker</a> page.</p>
+
+  <h2 id="lite">SDD-lite for a 45-minute interview</h2>
+  <p>No time for the full pipeline? Keep the discipline, drop the tooling. One file, three sections, five minutes:</p>
+  <script type="text/plain" class="snippet" data-lang="md" data-title="spec.md">
+    # Nudge: MVP spec
+    ## What & why
+    User: busy professional who starts habits and quits in week 2.  Pain: no feedback on what works for *them*.
+    Goal: increase week-2 retention of habit tracking.  Success: % of new users with ≥5 check-ins in first 10 days.
+    ## Stories (acceptance criteria)
+    1. Check-in in < 20s: mood, energy, sleep, habits done → saved, streak updates.
+    2. After 7 check-ins: see 1 suggestion + "why" from my own data → accept / snooze / dismiss.
+    3. Empty state explains what happens after 7 days.
+    Out of scope: auth (mock user), notifications, wearables, sharing.
+    ## Build plan
+    Stack: Next.js + Tailwind + shadcn, localStorage → Supabase later. AI: server route, JSON schema, fallback tip.
+    Tasks: (1) check-in form + list  (2) streak logic  (3) suggestion card with mock  (4) real AI call  (5) edge cases
+  </script>
+  <p>Paste it as your first build prompt with "implement task 1 only". Saying "I'm writing a short spec first so the AI builds the right thing" is itself a strong signal.</p>
+
+  <h2 id="writing">Writing specs the AI can't misread</h2>
+  <ul>
+    <li><b>Acceptance criteria as Given / When / Then.</b> "Given 7+ check-ins, when I open Today, then I see exactly one suggestion with a 'why' under 20 words."</li>
+    <li><b>Explicit out-of-scope list.</b> The single best defence against feature creep.</li>
+    <li><b>Name the edge cases</b>: empty, first-time, error, offline, very long input.</li>
+    <li><b>State non-functional needs</b>: privacy, latency, accessibility, cost ceiling per user.</li>
+    <li><b>Mark assumptions</b> as <code>[ASSUMPTION]</code> so the clarify step questions them.</li>
+    <li><b>One spec per feature</b>, not one giant spec for the app.</li>
+  </ul>
+
+  <h2 id="alt">Other ways to do SDD (pick one)</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Option</th><th>Flow</th><th>Pick it when</th></tr>
+    <tr><td><b>GitHub Spec Kit</b> (our default)</td><td>constitution → specify → clarify → plan → tasks → implement</td><td>You want explicit, reviewable artifacts that work across agents.</td></tr>
+    <tr><td>Superpowers plugin</td><td>brainstorming → spec → writing-plans → subagent execution with TDD and two-stage review</td><td>You want the agent to run for hours on a plan with strict TDD.</td></tr>
+    <tr><td>feature-dev plugin</td><td>clarify → explore codebase → architecture options → implement → review</td><td>You're adding features to an existing codebase.</td></tr>
+    <tr><td>Hand-rolled (this site's <a href="starter.html">starter kit</a>)</td><td><code>/grill</code> → <code>/prd</code> → plan mode → <code>tasks.md</code> → <code>/ship</code></td><td>You want minimal tooling and full control.</td></tr>
+  </table></div>
+  <div class="callout warn"><div class="tag">Don't stack them</div><p>Running Spec Kit and Superpowers' planning on the same feature gives Claude two competing processes. Choose one lane per repo and write it into CLAUDE.md.</p></div>
+
+  <h2 id="pm">Map it to PM artifacts you already know</h2>
+  <div class="table-wrap"><table>
+    <tr><th>PM artifact</th><th>SDD artifact</th></tr>
+    <tr><td>Product principles / tenets</td><td>constitution.md</td></tr>
+    <tr><td>PRD (problem, users, stories, metrics)</td><td>spec.md</td></tr>
+    <tr><td>Open questions log</td><td>clarify step</td></tr>
+    <tr><td>Tech design doc (from eng)</td><td>plan.md, data-model.md, contracts/</td></tr>
+    <tr><td>Jira epics & tickets</td><td>tasks.md (push to Linear/Jira via MCP)</td></tr>
+    <tr><td>QA test plan</td><td>acceptance criteria → tests; /speckit.checklist</td></tr>
+  </table></div>
+  <div class="callout tip"><div class="tag">Sources</div><p><a href="https://github.com/github/spec-kit">github/spec-kit</a> and its <a href="https://github.com/github/spec-kit/blob/main/spec-driven.md">spec-driven.md</a> · <a href="https://github.com/obra/superpowers">obra/superpowers</a> · <a href="https://developertoolkit.ai/en/ecosystem/plugins/anthropic-dev-plugins/">feature-dev plugin overview</a></p></div>
+</main>
+</body>
+</html>

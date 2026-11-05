@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>45-min drill & 40 mock prompts · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="practice">
+<main>
+  <div class="eyebrow">Interview · 02</div>
+  <h1>The 45-minute drill & 40 mock prompts</h1>
+  <p class="lede">Draw a prompt, start the timer, and run the full Clarify → Spec → Build → Verify → Metrics loop out loud. Each prompt has a curveball the interviewer is likely to throw halfway.</p>
+  <div class="toc" data-auto></div>
+
+  <h2 id="drill">Run a timed mock</h2>
+  <div class="widget">
+    <h4>1 · Draw a prompt</h4>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select id="fInd"><option value="">Any industry</option></select>
+      <select id="fType"><option value="">Any type</option></select>
+      <button class="btn primary" id="draw">🎲 Draw a prompt</button>
+    </div>
+    <div class="result" id="drawn">Press draw. Read it once, then start the timer.</div>
+  </div>
+  <div class="widget">
+    <h4>2 · Run the clock</h4>
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+      <div class="timer-face" id="clock">45:00</div>
+      <div><button class="btn primary" id="tStart">▶ Start</button> <button class="btn" id="tReset">↺ Reset</button>
+      <div style="margin-top:8px;font-size:14px">Length: <span class="seg" id="lenSeg"><button data-m="30">30</button><button data-m="45" class="on">45</button><button data-m="60">60</button></span> min</div></div>
+    </div>
+    <div class="phase-bar" id="phaseBar"></div>
+    <div class="result" id="phaseTip"></div>
+  </div>
+  <p>Then score yourself with the <a href="interview.html#rubric">rubric</a>. Record your screen and voice at least twice a week; watching yourself is the fastest way to stop narrating status instead of reasoning.</p>
+
+  <h2 id="bank">All 40 prompts</h2>
+  <input type="search" data-filter="#plist" placeholder="Filter by keyword, industry or type… e.g. fintech, agent, voice">
+  <div class="table-wrap"><table id="plist"><thead><tr><th>#</th><th>Prompt</th><th>Industry · type</th><th>Likely curveball</th></tr></thead><tbody></tbody></table></div>
+
+  <h2 id="plan">Practice schedule</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Week</th><th>Daily</th><th>Goal</th></tr>
+    <tr><td>1</td><td>One prompt, 60 minutes, untimed pauses allowed. Focus on clarify + spec.</td><td>You can scope any prompt to one user, one pain, one metric in under 7 minutes.</td></tr>
+    <tr><td>2</td><td>One prompt, 45 minutes, strict timer. Record twice.</td><td>Working happy path by minute 25 every time.</td></tr>
+    <tr><td>3</td><td>One prompt in 30 minutes + one take-home-style build over the weekend.</td><td>Speed with judgement intact; a deployed project for your portfolio.</td></tr>
+    <tr><td>4</td><td>Mock with a friend playing interviewer and throwing the curveball.</td><td>Rubric 16+/20 three days in a row.</td></tr>
+  </table></div>
+  <div class="callout tip"><div class="tag">Build a portfolio while you practise</div><p>Pick your 3 best mocks, finish them properly with the <a href="sdd.html">spec-driven flow</a>, deploy them, and link them on your resume. AI-adjacent projects (personalization, recommendations, automation agents) are exactly what AI PM interviewers want to see.</p></div>
+
+<script>
+const P = [
+ ["Build an AI personalization tracker that learns a user's habits and suggests one tiny daily improvement.","Consumer · Health","Personalization","Users say suggestions feel creepy. How do you add transparency and control?"],
+ ["Design a smart expense categoriser for freelancers that flags tax-deductible items.","Fintech","AI classification","Model miscategorises 15% of items. What's the UX for corrections?"],
+ ["A fraud-alert companion for a neobank: explain why a transaction was blocked and let the user resolve it.","Banking","Explainability","How do you avoid tipping off actual fraudsters?"],
+ ["An AI onboarding assistant for a B2B SaaS that gets new admins to first value in 10 minutes.","SaaS","Agent / copilot","Enterprise customers forbid sending data to third-party LLMs."],
+ ["A voice agent that lets delivery drivers report issues hands-free.","Logistics","Voice agent","Drivers are in noisy environments with patchy connectivity."],
+ ["A RAG assistant over a company's HR policies for employees.","HR / Enterprise","RAG","The policy changed last week but the bot quotes the old one."],
+ ["A shopping assistant that builds an outfit from items already in the user's cart and wardrobe photos.","E-commerce","Recommendation","Cold start: brand-new user with no history."],
+ ["A study planner that adapts to a student's quiz results.","EdTech","Personalization","Parents want visibility; students want privacy."],
+ ["A symptom-logging app that prepares a summary before a doctor's visit.","Healthcare","Summarisation","Model suggests a diagnosis. What are your guardrails?"],
+ ["An insurance claims intake bot that collects photos and pre-fills the claim.","Insurance","Multimodal agent","Users upload fake or reused photos."],
+ ["A recruiter copilot that screens resumes against a job description.","HR Tech","Ranking","How do you detect and prevent bias?"],
+ ["A meeting-notes app that turns calls into Jira tickets.","Productivity","Agent + integrations","Tickets get created for things nobody agreed to."],
+ ["A dashboard that tells a store manager which products to reorder this week.","Retail","Forecasting","Forecast was wrong during a festival week."],
+ ["An AI travel planner that books within a budget.","Travel","Agent with tools","The agent wants to make a payment. What confirmation do you require?"],
+ ["A feedback-analysis tool that clusters app-store reviews into themes and trends.","Product tools","Clustering / LLM","Leadership wants a single 'sentiment score'. Do you agree?"],
+ ["A cooking assistant that plans weekly meals from what's in the fridge.","Consumer","Personalization","Allergies: what if the model ignores one?"],
+ ["A customer-support copilot that drafts replies for agents.","CX","Copilot","Agents stop reading drafts and just hit send."],
+ ["A smart fridge interface for a big tech company.","Hardware / IoT","Product design","The fridge has no screen, only voice and an app."],
+ ["An AI feature for enterprise users of an LLM product (e.g. admins managing usage).","AI platform","Enterprise feature","Admins need audit logs and cost controls."],
+ ["A loan pre-qualification flow that explains decisions in plain language.","Lending","Explainability","Regulators require adverse-action reasons."],
+ ["A fitness coach that adjusts workouts from wearable data.","Health / Fitness","Personalization","Wearable data is missing for 3 days."],
+ ["A real-estate assistant that summarises listings and neighbourhoods.","Proptech","RAG + maps","Listing data conflicts across sources."],
+ ["An internal analytics bot: ask questions in English, get charts from the warehouse.","Data / BI","Text-to-SQL","It writes a query that scans the whole 5TB table."],
+ ["A subscription-churn predictor with retention offers for a streaming app.","Media","Prediction + action","Offers cannibalise users who weren't going to churn."],
+ ["A kids' reading companion that asks comprehension questions.","EdTech (minors)","Conversational","Child-safety and parental-consent requirements."],
+ ["A procurement agent that compares vendor quotes and drafts a recommendation.","B2B Ops","Agent","The agent hallucinates a vendor's price."],
+ ["A personal finance coach that sets savings goals from bank transactions.","Fintech","Personalization","Users connect accounts only if they trust you. How do you earn it?"],
+ ["A clinic appointment no-show predictor with reminder messages.","Healthcare","Prediction","Reminders annoy patients who always show up."],
+ ["A code-review summariser for engineering managers.","Dev tools","Summarisation","Managers use it to rank engineers."],
+ ["A multilingual support bot for an Indian e-commerce app (Hindi, Tamil, English).","E-commerce (India)","Multilingual","Code-mixed Hinglish input breaks intent detection."],
+ ["A warehouse picking-route optimiser with an AI explanation layer.","Logistics","Optimisation","Pickers ignore routes they don't understand."],
+ ["A legal-contract clause checker for startups.","Legal","RAG + extraction","A missed clause causes real damage. Who's liable?"],
+ ["A social app feature that suggests who to follow.","Social","Recommendation","Filter bubbles and harassment risk."],
+ ["An AI tutor for interview prep that grades spoken answers.","EdTech","Speech + eval","Grading is inconsistent across accents."],
+ ["A sales-call coach that scores calls and suggests next steps.","Sales tech","Analysis","Reps feel surveilled."],
+ ["An automation that triages inbound emails and routes them to the right team (n8n).","Ops","Workflow automation","5% are misrouted urgent emails."],
+ ["A sustainability tracker that estimates a company's travel emissions.","Climate","Estimation","Numbers will be used in public reporting."],
+ ["A pharmacy assistant that checks drug interactions from a prescription photo.","Healthcare","OCR + safety","OCR misreads a dosage."],
+ ["A creator tool that turns a long video into short clips with captions.","Creator economy","Multimodal","Copyrighted music in the source video."],
+ ["An airline disruption assistant that rebooks passengers during delays.","Aviation","Agent with tools","1,000 passengers hit it at the same minute."],
+];
+function render(){
+  const tb = document.querySelector("#plist tbody");
+  tb.innerHTML = P.map((p,i)=>`<tr data-row><td>${i+1}</td><td>${p[0]}</td><td><span class="pill">${p[1]}</span><br><span class="pill amber" style="margin-top:4px">${p[2]}</span></td><td>${p[3]}</td></tr>`).join("");
+  const inds=[...new Set(P.map(p=>p[1]))].sort(), types=[...new Set(P.map(p=>p[2]))].sort();
+  document.getElementById("fInd").innerHTML += inds.map(x=>`<option>${x}</option>`).join("");
+  document.getElementById("fType").innerHTML += types.map(x=>`<option>${x}</option>`).join("");
+}
+render();
+document.getElementById("draw").onclick=()=>{
+  const fi=document.getElementById("fInd").value, ft=document.getElementById("fType").value;
+  const pool=P.filter(p=>(!fi||p[1]===fi)&&(!ft||p[2]===ft)); const p=pool[Math.floor(Math.random()*pool.length)];
+  document.getElementById("drawn").innerHTML = p?`<b>${p[0]}</b><br><span style="font-size:14px">${p[1]} · ${p[2]}</span><details style="margin-top:8px"><summary>Reveal the curveball (open at the halfway mark)</summary>${p[3]}</details>`:"No prompt matches both filters.";
+};
+// timer
+const PH=[["Clarify",.15,"#5b3df5","Restate. Goal? Segments → pick one. Pains → pick one. Propose your solution and must-haves."],["Spec",.14,"#7a46e6","Persona prompt → mini-PRD from YOUR decisions. Review aloud. Self-critique. Lock in/out of scope."],["Build",.38,"#b44fae","Happy path first with mock data. One feature per prompt. Narrate what you expect and why."],["Verify",.18,"#e2554f","Click through as the user. Empty, long, invalid, double-submit, failed AI call, mobile. Precise fix prompts."],["Wrap",.15,"#ff5a1f","Demo the story. North-star + guardrail metric. Risks. AI guardrails. What you'd do next."]];
+let total=45*60,left=total,tick=null;
+function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
+function draw(){
+  document.getElementById("clock").textContent=fmt(left);
+  const el=total-left; let acc=0,cur=0; PH.forEach((p,i)=>{ if(el>=acc*total) cur=i; acc+=p[1]; });
+  let a=0; document.getElementById("phaseBar").innerHTML=PH.map((p,i)=>{const s=Math.round(a*total/60), e=Math.round((a+p[1])*total/60); a+=p[1]; return `<div class="${i===cur&&tick?"cur":""}" style="width:${p[1]*100}%;background:${p[2]}">${p[0]} ${s}–${e}</div>`;}).join("");
+  document.getElementById("phaseTip").innerHTML=`<b>${tick||left<total?"Now: "+PH[cur][0]:"Phase plan"}</b> · ${PH[cur][3]}`;
+  if(left===0){ document.getElementById("phaseTip").innerHTML="<b>Time.</b> Score yourself with the rubric on the interview page."; }
+}
+document.getElementById("tStart").onclick=e=>{
+  if(tick){clearInterval(tick);tick=null;e.target.textContent="▶ Resume";draw();return;}
+  e.target.textContent="⏸ Pause"; tick=setInterval(()=>{ if(left>0){left--;draw();} else {clearInterval(tick);tick=null;} },1000); draw();
+};
+document.getElementById("tReset").onclick=()=>{clearInterval(tick);tick=null;left=total;document.getElementById("tStart").textContent="▶ Start";draw();};
+document.querySelectorAll("#lenSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#lenSeg button").forEach(x=>x.classList.remove("on"));b.classList.add("on");total=+b.dataset.m*60;left=total;clearInterval(tick);tick=null;document.getElementById("tStart").textContent="▶ Start";draw();});
+draw();
+</script>
+</main>
+</body>
+</html>

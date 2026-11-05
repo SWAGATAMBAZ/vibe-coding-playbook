@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vibe Coding Playbook · Start here</title>
+<meta name="description" content="Master vibe coding with Claude Code as an AI PM: interview framework, one-skill-per-task stack, MCP connectors, spec-driven development, agents, system design and databases.">
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="index">
+<main>
+  <div class="hero">
+    <div>
+      <div class="eyebrow">AI PM · Claude Code · Interview → Production</div>
+      <h1>Vibe code like a product leader, not a prompt typist.</h1>
+      <p class="lede">One playbook for two goals: <b>clear any vibe coding interview</b> and <b>build any AI product</b> (personalization trackers, RAG assistants, agents, dashboards) with Claude Code, a lean set of skills and MCP connectors, and a spec-driven workflow.</p>
+      <a class="btn primary" href="interview.html">Start with the interview framework →</a>
+      <a class="btn" href="skills.html" style="margin-left:8px">Jump to the skill stack</a>
+    </div>
+    <svg viewBox="0 0 360 300" aria-label="The vibe coding loop: clarify, spec, build, verify, ship">
+      <defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#5b3df5"/><stop offset="1" stop-color="#ff5a1f"/></linearGradient></defs>
+      <circle cx="180" cy="150" r="104" fill="none" stroke="url(#g)" stroke-width="3" stroke-dasharray="6 7"/>
+      <g font-family="Space Grotesk, sans-serif" font-weight="700" font-size="13" text-anchor="middle">
+        <g transform="translate(180,46)"><rect x="-52" y="-18" width="104" height="36" rx="11" fill="#5b3df5"/><text y="5" fill="#fff">1 · Clarify</text></g>
+        <g transform="translate(279,118)"><rect x="-48" y="-18" width="96" height="36" rx="11" fill="#7a46e6"/><text y="5" fill="#fff">2 · Spec</text></g>
+        <g transform="translate(241,236)"><rect x="-48" y="-18" width="96" height="36" rx="11" fill="#b44fae"/><text y="5" fill="#fff">3 · Build</text></g>
+        <g transform="translate(119,236)"><rect x="-48" y="-18" width="96" height="36" rx="11" fill="#e2554f"/><text y="5" fill="#fff">4 · Verify</text></g>
+        <g transform="translate(81,118)"><rect x="-48" y="-18" width="96" height="36" rx="11" fill="#ff5a1f"/><text y="5" fill="#fff">5 · Ship</text></g>
+        <text x="180" y="146" font-size="15" fill="currentColor">You own the</text>
+        <text x="180" y="166" font-size="15" fill="currentColor">judgement</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="callout interview"><div class="tag">🎯 The one idea that matters</div>
+    <p>Interviewers grade <b>your judgement, not the AI's output</b>. Coaches who've run these rounds describe four signals: the insight you add beyond the AI, using AI for routine work so you can spend time on trade-offs, turning ambiguity into structured instructions, and catching feasibility, privacy and policy problems the AI misses. Every page of this site trains one of those four signals.</p>
+  </div>
+
+  <h2 id="map">How the site is organised</h2>
+  <div class="grid">
+    <div class="card"><span class="pill hot">Interview</span><p>The 5-step framework, a 45-minute timed drill, 40 mock prompts across industries, a scoring rubric and a copy-paste prompt library.</p></div>
+    <div class="card"><span class="pill">Claude Code</span><p>Essentials, a <b>curated stack of one skill per task</b> (no duplicates), MCP connectors, spec-driven development, and a starter kit of commands, hooks and CLAUDE.md you can drop into any repo.</p></div>
+    <div class="card"><span class="pill green">Build</span><p>Frontend, backend and deploy defaults; system design including API gateways; a database chooser; agents with n8n, LangGraph or the Claude Agent SDK; and security.</p></div>
+    <div class="card"><span class="pill amber">Solutions</span><p>A fully worked <b>AI personalization tracker</b>, plus 18 blueprints for fintech, health, e-commerce, edtech, HR, logistics, insurance, SaaS and more.</p></div>
+  </div>
+
+  <h2 id="roadmap">The 4-week roadmap</h2>
+  <p>About 1–1.5 hours a day. Each step ticks itself when you mark its page done. If your interview is in a week, do the <b>fast track</b>: Interview → Practice → Prompts → Personalization → Cheat sheet, then one timed mock a day.</p>
+  <div class="roadmap">
+    <div class="step" data-step="claude-code"><div class="card"><div class="week">WEEK 1 · DAYS 1–2</div><h4><a href="claude-code.html">Claude Code essentials</a></h4><p>Install, CLAUDE.md, plan mode, permission modes, context hygiene, subagents, the built-in commands you'll use daily.</p></div></div>
+    <div class="step" data-step="skills"><div class="card"><div class="week">WEEK 1 · DAYS 3–4</div><h4><a href="skills.html">The skill stack</a> + <a href="mcp.html">MCP connectors</a></h4><p>Install the lean stack: one skill per job (PRD, spec, frontend, DB, agents, review, security, testing) and the 6 connectors you need first.</p></div></div>
+    <div class="step" data-step="sdd"><div class="card"><div class="week">WEEK 1 · DAYS 5–7</div><h4><a href="sdd.html">Spec-driven development</a> + <a href="starter.html">starter kit</a></h4><p>Constitution → spec → clarify → plan → tasks → implement. Add your custom commands and hooks. Build one small app end-to-end with it.</p></div></div>
+    <div class="step" data-step="stack"><div class="card"><div class="week">WEEK 2 · DAYS 8–9</div><h4><a href="stack.html">Frontend, backend & deploy</a></h4><p>The default stack (Next.js + Tailwind + shadcn/ui + Supabase + Vercel) and when to swap pieces. Ship a deployed app with auth.</p></div></div>
+    <div class="step" data-step="system-design"><div class="card"><div class="week">WEEK 2 · DAYS 10–11</div><h4><a href="system-design.html">System design & API gateway</a></h4><p>The 15 building blocks you must name in an interview, plus the LLM-specific ones: model gateway, streaming, caching, evals, guardrails.</p></div></div>
+    <div class="step" data-step="databases"><div class="card"><div class="week">WEEK 2 · DAY 12</div><h4><a href="databases.html">Which database when?</a></h4><p>Postgres by default; when to reach for Redis, a vector DB, a graph, time-series or analytics store. Interactive chooser.</p></div></div>
+    <div class="step" data-step="agents"><div class="card"><div class="week">WEEK 2 · DAYS 13–14</div><h4><a href="agents.html">AI agents</a></h4><p>Workflow vs agent, the five agent patterns, n8n vs LangGraph vs Claude Agent SDK, and a working LangGraph agent with memory and human approval.</p></div></div>
+    <div class="step" data-step="security"><div class="card"><div class="week">WEEK 3 · DAY 15</div><h4><a href="security.html">Ship safely</a></h4><p>The 12 holes vibe-coded apps ship with, prompt-injection defence, and the review → test → security loop.</p></div></div>
+    <div class="step" data-step="personalization"><div class="card"><div class="week">WEEK 3 · DAYS 16–18</div><h4><a href="personalization.html">Worked example: AI personalization tracker</a></h4><p>From one-line prompt to PRD, schema, architecture, prompts, metrics and guardrails. Rebuild it yourself in 90 minutes, then in 45.</p></div></div>
+    <div class="step" data-step="blueprints"><div class="card"><div class="week">WEEK 3 · DAYS 19–21</div><h4><a href="blueprints.html">18 solution blueprints</a></h4><p>For each industry: the MVP, data model, AI pattern, connectors, metric and the trap. Prototype three of them.</p></div></div>
+    <div class="step" data-step="interview"><div class="card"><div class="week">WEEK 4 · ALL WEEK</div><h4><a href="interview.html">Interview framework</a> → <a href="practice.html">timed drills</a> → <a href="prompts.html">prompt library</a></h4><p>One 45-minute mock a day with the built-in timer and rubric. Record yourself narrating. Review against the rubric.</p></div></div>
+    <div class="step" data-step="cheatsheet"><div class="card"><div class="week">NIGHT BEFORE</div><h4><a href="cheatsheet.html">One-page cheat sheet</a></h4><p>The framework, the opening script, the 10 checks before you say "done", and the system design names to drop.</p></div></div>
+  </div>
+
+  <h2 id="what">What "vibe coding" means for a PM</h2>
+  <p>For a PM, vibe coding means using an AI coding tool (Claude Code, Cursor, Replit) or an AI prototyping tool (Lovable, Bolt, v0) to turn a product idea into a working prototype fast. It does not mean you've become an engineer. It means you can:</p>
+  <ul>
+    <li><b>Make the idea concrete</b>: a clickable prototype beats a 10-page PRD in a review.</li>
+    <li><b>Direct</b> the AI with a clear spec, constraints and acceptance criteria, instead of one vague request.</li>
+    <li><b>Verify</b> what it built: run it, break it, read the diff, and catch hallucinated or insecure code.</li>
+    <li><b>Reason about the system</b>: which database, where the LLM call lives, what it costs, what breaks at 10× users, what the privacy risk is.</li>
+  </ul>
+  <div class="callout pm"><div class="tag">PM lens</div><p>"I vibe coded it" is not a story. "I prototyped three onboarding flows in an afternoon, put them in front of 8 users, and killed two" is. Keep the product outcome at the centre of every demo and every interview answer.</p></div>
+
+  <h2 id="tools">Which tool for which moment</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Moment</th><th>Best tool</th><th>Why</th></tr>
+    <tr><td>Live 45-min interview, browser only</td><td>Lovable, Bolt, v0, Replit</td><td>Zero setup, instant preview, deploy link to share. Ask the recruiter which tool you'll get.</td></tr>
+    <tr><td>Live interview, your laptop allowed</td><td>Claude Code or Cursor</td><td>Full control, real repo, tests. Pre-install your stack and skills before the call.</td></tr>
+    <tr><td>Take-home assignment</td><td>Claude Code + spec-driven flow</td><td>Spec, plan, tests and a README are the differentiator. Deploy on Vercel and send the link.</td></tr>
+    <tr><td>Real product work</td><td>Claude Code + skills + MCP</td><td>Repeatable quality via CLAUDE.md, hooks, review and security checks.</td></tr>
+    <tr><td>Automations / back-office agents</td><td>n8n (or Claude Code building n8n via MCP)</td><td>Hundreds of integrations, visual, easy for ops teams to own.</td></tr>
+    <tr><td>Custom, stateful AI agents</td><td>LangGraph or Claude Agent SDK</td><td>Control of state, memory, human approval, evals.</td></tr>
+  </table></div>
+
+  <h2 id="setup">Set up in 10 minutes</h2>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="terminal · install Claude Code and the core stack">
+    # 1. Install Claude Code (native installer; the npm package is deprecated)
+    curl -fsSL https://claude.ai/install.sh | bash        # macOS / Linux / WSL
+    # Windows PowerShell:  irm https://claude.ai/install.ps1 | iex
+
+    # 2. Start it inside a project folder and let it write CLAUDE.md
+    mkdir my-app && cd my-app && claude
+    #   > /init
+
+    # 3. Install the lean skill + connector stack (see the Starter kit page for the full script)
+    #   > /plugin marketplace add anthropics/skills
+    #   > /plugin install code-review@claude-plugins-official
+    #   > /plugin install security-guidance@claude-plugins-official
+    claude mcp add context7 -- npx -y @upstash/context7-mcp
+    claude mcp add playwright -- npx @playwright/mcp@latest
+  </script>
+  <p>The full one-shot install script, and the files you copy into every repo, are on the <a href="starter.html">Starter kit</a> page. They're also in this site's GitHub repo under <code>starter-kit/</code>.</p>
+</main>
+</body>
+</html>

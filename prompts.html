@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prompt library · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="prompts">
+<main>
+  <div class="eyebrow">Interview · 03</div>
+  <h1>Prompt library: copy, fill the [brackets], paste</h1>
+  <p class="lede">Prompts for every phase of an interview or a real build. They work in Claude Code, Cursor, Lovable, Bolt, v0 and Replit. Learn their <i>shape</i> so you can type them from memory if you can't paste.</p>
+  <div class="callout tip"><div class="tag">The anatomy of a good build prompt</div><p><b>Role</b> · <b>Goal</b> (user + outcome) · <b>Context</b> (spec, stack, files) · <b>Constraints</b> (scope, style, what not to touch) · <b>Acceptance criteria</b> (how we'll know it's done) · <b>Output format</b> · <b>"Ask me if anything is unclear before you start."</b></p></div>
+  <div class="toc" data-auto></div>
+
+  <h2 id="clarify">1 · Clarify & scope</h2>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="brainstorm segments (you still pick)">
+    I'm scoping a product: [one-line prompt]. Business goal: [goal].
+    List 4 distinct user segments with their top pain point for this product.
+    For each: how often they hit the pain, how reachable they are, and willingness to pay/engage.
+    Do NOT recommend a solution. Keep it to a compact table.
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="grill me (when the request is vague)">
+    Before writing anything, interview me about this idea one question at a time until we agree
+    on: target user, the single job to be done, must-have vs nice-to-have, data we have, constraints
+    (privacy, platform, time), and how we'll measure success. Offer your recommended answer with each
+    question so I can just say yes or change it. Stop after 8 questions max and summarise the decisions.
+  </script>
+
+  <h2 id="prd">2 · Spec / PRD</h2>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="mini-PRD from MY decisions">
+    You are a senior technical product manager with a founder's mindset.
+    Write a one-page PRD for the MVP using ONLY these decisions:
+    - User: [segment]   - Pain: [pain]   - Solution: [my solution]
+    - Must-haves: [list]   - Out of scope: [list]   - Platform: [web/mobile]
+    Sections: Problem · User & JTBD · User stories with acceptance criteria (Given/When/Then, max 5)
+    · Core flow (screens) · Data model (tables + key fields) · Where AI is used, why, and the fallback
+    when it's wrong · Success metric + guardrail metric · Risks & open questions.
+    Be specific. No filler. Mark any assumption with [ASSUMPTION].
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="self-critique, then fact-check">
+    Critique this PRD as a skeptical staff engineer and a privacy lawyer together.
+    Only list issues you are highly confident about, ranked by impact, max 6.
+    For each: the issue, why it matters, the smallest fix.
+    Then list any claim in the PRD that isn't supported by what I told you, so I can remove it.
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="apply only what I accept">
+    Apply only fixes #[1, 3, 4] from your critique. Don't change anything else.
+    Show the updated sections only.
+  </script>
+
+  <h2 id="build">3 · Build</h2>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="first build prompt: thin vertical slice">
+    Build the MVP from this PRD: [paste PRD or @prd.md]
+    Stack: Next.js (App Router) + TypeScript + Tailwind + shadcn/ui. [Supabase for DB/auth | local mock data].
+    Phase 1 ONLY: the core happy path "[user does X → sees Y]" end-to-end, using mock data and a
+    stubbed AI response. Clean, minimal, mobile-friendly UI with an empty state and a loading state.
+    No auth, no settings, no extra pages yet.
+    Done when: I can [do X] and see [Y] without errors in the console.
+    Before coding, list the files you'll create in one short plan.
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="add the real AI call (safely)">
+    Replace the stubbed AI response with a real call to [Claude/OpenAI] via a server-side route
+    (/api/[name]). Never expose the API key to the client; read it from process.env.
+    Return structured JSON matching this schema: [schema]. Validate it with zod; on invalid output
+    or timeout (>10s), return a friendly fallback and log the error. Stream the response if it's long text.
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="add one feature">
+    Add [feature] to the existing app. Requirements: [bullets]. Acceptance: [Given/When/Then].
+    Touch only the files needed. Don't refactor unrelated code. Tell me which files you changed and why.
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="UI polish without generic AI look">
+    Improve the visual design of [screen]: clear hierarchy, one accent colour, generous spacing,
+    readable type scale, accessible contrast, visible focus states, helpful empty/error states.
+    Avoid generic gradients and emoji icons. Keep all existing behaviour identical.
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="database schema">
+    Design a Postgres schema for [entities]. Include primary keys (uuid), foreign keys, created_at,
+    indexes for the queries [list main queries], and row-level security so users only see their own
+    rows. Output a single SQL migration and a short explanation of each index.
+  </script>
+
+  <h2 id="debug">4 · Verify & debug</h2>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="precise bug report">
+    Bug: when I [steps], I expected [expected] but got [actual].
+    Error: [paste exact error / console output].
+    Find the root cause before changing code: explain it in 2 sentences, then make the smallest fix.
+    Don't change unrelated files. Tell me how to verify the fix.
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="edge-case sweep">
+    List the 8 most likely ways this feature breaks for a real user (empty input, very long input,
+    special characters, double submit, slow/failed network, failed AI call, mobile width, logged-out).
+    For each, tell me whether the current code handles it, and fix the ones that don't.
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="write tests first (TDD)">
+    Write failing tests for [behaviour] covering the happy path and these edge cases: [list].
+    Run them and show they fail. Then write the minimum code to make them pass and run them again.
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="rescue: two failed fixes in a row">
+    Stop. Revert your last two changes. Summarise in 3 bullets what we know about the problem
+    and what we've tried. Propose 2 different approaches with trade-offs, recommend one, and wait.
+  </script>
+
+  <h2 id="review">5 · Review, security, performance</h2>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="pre-demo review">
+    Review the whole diff as a senior engineer. Report only real issues, ranked:
+    bugs, security (secrets in client, missing auth/authorization checks, injection, missing RLS,
+    prompt injection in AI inputs), data loss risks, performance (N+1 queries, missing indexes,
+    unnecessary re-renders), and accessibility. For each: file:line, issue, fix. Don't fix yet.
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="production readiness">
+    What would need to change to take this from prototype to production for 100k users?
+    Group by: auth & permissions, data & migrations, AI cost/latency/quality, rate limiting & abuse,
+    observability, privacy & compliance, testing. Keep it to the top 3 per group.
+  </script>
+
+  <h2 id="wrap">6 · Metrics, risks, demo</h2>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="metrics & guardrails (then edit them yourself)">
+    For this product and goal [goal], propose: 1 north-star metric, 3 input metrics, 2 guardrail
+    metrics, and 1 experiment to validate the core hypothesis (hypothesis, variant, success criterion,
+    sample/duration). Tie each metric to the user pain [pain]. Be specific and measurable.
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="AI risk & guardrail pass">
+    List the top risks of the AI component: wrong answers, harmful output, bias, privacy leakage,
+    prompt injection, cost spikes, latency. For each: likelihood, impact, and the product guardrail
+    (UX, human-in-the-loop, thresholds, filters, evals, monitoring).
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="90-second demo script">
+    Write a 90-second demo script for this prototype: the user and their pain (1 sentence), the
+    happy-path walkthrough (what I click and what they see), one edge case we handle, the success
+    metric, and what we'd test next. Plain spoken English.
+  </script>
+
+  <h2 id="tool">Tool-specific tips</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Tool</th><th>Tips</th></tr>
+    <tr><td>Claude Code</td><td>Plan mode first (<span class="kbd">Shift</span>+<span class="kbd">Tab</span>), reference files with <code>@</code>, keep CLAUDE.md short, <code>/clear</code> between unrelated tasks, use <code>/rewind</code> or git to undo.</td></tr>
+    <tr><td>Lovable / Bolt</td><td>Use the chat/plan mode for questions so you don't burn credits on edits; connect Supabase for DB/auth; pin a working version before risky prompts.</td></tr>
+    <tr><td>v0</td><td>Great for UI and Next.js components; paste a screenshot or describe the layout; export to your repo when done.</td></tr>
+    <tr><td>Cursor</td><td>Use rules files for conventions; agent mode for multi-file changes; review each diff before accepting.</td></tr>
+    <tr><td>Replit</td><td>Agent builds full-stack with hosting included; good when you need a backend and a live URL fast.</td></tr>
+  </table></div>
+</main>
+</body>
+</html>

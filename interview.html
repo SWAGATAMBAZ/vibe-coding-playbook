@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ace the vibe coding interview · Vibe Coding Playbook</title>
+<link rel="stylesheet" href="assets/style.css"><script src="assets/app.js"></script>
+</head>
+<body data-page="interview">
+<main>
+  <div class="eyebrow">Interview · 01</div>
+  <h1>Ace the PM vibe coding interview</h1>
+  <p class="lede">What the round looks like, what's actually scored, a 5-step framework with a minute-by-minute plan, the exact words to say, and how to recover when the AI breaks on screen.</p>
+  <div class="toc" data-auto></div>
+
+  <h2 id="formats">The three formats</h2>
+  <div class="grid">
+    <div class="card"><span class="pill hot">Live · 45 min</span><h4>Prototyping case</h4><p>"Build X for user Y." You scope, prompt, build and demo inside one session. The most common format.</p></div>
+    <div class="card"><span class="pill">Live · hybrid</span><h4>Product sense + prototype</h4><p>A normal product design case where part of the time is building. Meta has run a "product sense with AI" round reported as about 30 minutes of product sense followed by 30 of vibe coding.</p></div>
+    <div class="card"><span class="pill green">Take-home</span><h4>Homework prototype</h4><p>Days, not minutes. Graded on the thinking (PRD, trade-offs, metrics) as much as the app. Adobe has used this format.</p></div>
+  </div>
+  <p>Reported at Google, Meta, Microsoft, Adobe, Figma and Shopify, mostly for AI PM roles and AI startups. Reports are thin and formats change, so <b>ask your recruiter</b>:</p>
+  <ul>
+    <li>Is vibe coding a separate round, or part of product sense?</li>
+    <li>Which tool will I use, and can I use my own laptop and setup?</li>
+    <li>Do I share my screen the whole time? Can I use my own prompt templates?</li>
+    <li>Is the output a working demo, a PRD, or both?</li>
+  </ul>
+
+  <h2 id="scored">What is actually scored</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Signal</th><th>What it looks like</th><th>How to show it</th></tr>
+    <tr><td><b>Human delta</b></td><td>The insight you add beyond the AI: spotting generic output, hallucinations, misalignment with the user.</td><td>Say out loud what you're rejecting and why. "The AI suggested a chatbot; our user is on a factory floor with gloves, so voice-first."</td></tr>
+    <tr><td><b>Strategic leverage</b></td><td>AI does the routine (boilerplate, PRD draft, styling) so you spend time on trade-offs.</td><td>Delegate fast, then spend the saved minutes on edge cases, metrics and risks.</td></tr>
+    <tr><td><b>Product direction</b></td><td>Turning a fuzzy goal into structured instructions with constraints and acceptance criteria.</td><td>Write a short spec before the first build prompt. Name the one user, one job, one metric.</td></tr>
+    <tr><td><b>Audit & redirect</b></td><td>Catching feasibility, privacy, policy and cross-functional issues the AI misses.</td><td>"Before I accept this: what breaks at 10× users? Where's PII? What would legal or eng push back on?"</td></tr>
+    <tr><td><b>Verification</b></td><td>Running the thing, testing edge cases, not trusting polish.</td><td>Click through every flow. Try empty input, huge input, a repeat click, a failed API call.</td></tr>
+    <tr><td><b>Communication</b></td><td>Narrating reasoning, not status updates.</td><td>"I'm choosing X over Y because…" beats "now I'm waiting for it to load".</td></tr>
+  </table></div>
+  <div class="callout warn"><div class="tag">The trap</div><p>Polished AI output is a trap. A beautiful UI built in 10 minutes earns little if you can't explain the user, the trade-offs, the metric and the risks. Strong candidates ask what breaks at scale, where the privacy risk is, and which trade-offs engineering would push back on.</p></div>
+
+  <h2 id="framework">The 5-step framework (C-S-B-V-M)</h2>
+  <div class="flow">
+    <div class="node hl">1 · Clarify & scope<small>5–7 min</small></div><span class="arrow">→</span>
+    <div class="node hl">2 · Spec / mini-PRD<small>5–7 min</small></div><span class="arrow">→</span>
+    <div class="node hl">3 · Build the MVP<small>15–18 min</small></div><span class="arrow">→</span>
+    <div class="node hl">4 · Verify & debug<small>6–8 min</small></div><span class="arrow">→</span>
+    <div class="node hl">5 · Metrics, risks, next<small>4–5 min</small></div>
+  </div>
+
+  <h3>1 · Clarify & scope: you think, not the AI</h3>
+  <ul>
+    <li><b>Goal:</b> "What's the business goal: acquisition, engagement, retention, revenue, cost?"</li>
+    <li><b>User:</b> list 2–3 segments, pick <b>one</b> and say why (biggest pain × reachable × aligned with goal).</li>
+    <li><b>Pain points:</b> list 3, pick the sharpest one.</li>
+    <li><b>Constraints:</b> platform (web/mobile/voice), data available, privacy, time.</li>
+    <li><b>Solution:</b> propose 2–3 ideas yourself, pick one, and name the must-haves vs nice-to-haves.</li>
+  </ul>
+  <p>Don't let the LLM write the solution. Use it at most to brainstorm segments, and then pick yourself.</p>
+
+  <h3>2 · Spec: a one-screen mini-PRD</h3>
+  <p>Ask the AI to draft a PRD from <i>your</i> decisions, using a persona prompt ("You are a senior technical PM with a founder's mindset…"). Then spend 2–3 minutes reviewing it out loud: what's good, what's generic, what's missing. Then have it self-critique, keeping only high-confidence suggestions, and accept the ones you agree with. The spec has:</p>
+  <ul>
+    <li>Problem, user, job-to-be-done; 3–5 user stories with acceptance criteria</li>
+    <li>MVP scope (in) and explicitly out of scope</li>
+    <li>Screens / flow, data model, where AI is used and why, fallback when AI is wrong</li>
+    <li>Success metric + guardrail metric</li>
+  </ul>
+  <p>Prompts for every step are on the <a href="prompts.html">prompt library</a> page.</p>
+
+  <h3>3 · Build: thin vertical slice first</h3>
+  <ul>
+    <li>First prompt: <b>the spec + tech constraints + "build only the core happy path first, with mock data"</b>.</li>
+    <li>Get one end-to-end flow working before adding anything. Then add features one prompt at a time.</li>
+    <li>While it generates, narrate: what you expect to see, what you'll check, what you'd do in production.</li>
+    <li>Use mock data or a hard-coded LLM response if API keys aren't available, and say so. A fake that works beats a real one that doesn't.</li>
+  </ul>
+
+  <h3>4 · Verify & debug: out loud</h3>
+  <ul>
+    <li>Click through as the user. Narrate each step.</li>
+    <li>Edge cases: empty state, long input, invalid input, double submit, slow or failed AI call, mobile width.</li>
+    <li>When something breaks, give a <b>precise</b> fix prompt: what you did, what you expected, what happened, the error text.</li>
+    <li>If a fix loops twice: revert, narrow the request, or simplify the feature. Say why.</li>
+    <li>Incorporate interviewer feedback immediately; it's a test of collaboration.</li>
+  </ul>
+
+  <h3>5 · Metrics, risks, guardrails, next</h3>
+  <ul>
+    <li><b>North-star + input metrics</b> tied to the goal and pain from step 1. One guardrail metric (e.g. complaint rate, latency, cost per user).</li>
+    <li><b>Risks:</b> AI accuracy, privacy, bias, abuse, cost, dependency on one model.</li>
+    <li><b>AI guardrails:</b> human review for high-stakes actions, confidence thresholds, refusals, transparency to the user, evals before launch.</li>
+    <li><b>What I'd do next:</b> user test with N people, the experiment you'd run, what you'd build in v2, what you'd cut.</li>
+  </ul>
+
+  <h2 id="minute">Minute-by-minute plan (45 minutes)</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Time</th><th>You do</th><th>You say (example)</th></tr>
+    <tr><td>0–2</td><td>Restate the prompt, ask how they'd like to run it</td><td>"Let me restate to make sure I've got it… I'll spend about 7 minutes scoping, then build, then test and wrap with metrics. Does that work?"</td></tr>
+    <tr><td>2–8</td><td>Clarify goal, segments, pick one, pains, pick one, propose solution</td><td>"I'll focus on first-time users because they churn fastest and we can reach them in onboarding."</td></tr>
+    <tr><td>8–14</td><td>Generate mini-PRD, review it aloud, self-critique, lock scope</td><td>"The draft is solid on flows but generic on success metrics, and it added social sharing, which I'm cutting from the MVP."</td></tr>
+    <tr><td>14–31</td><td>Build happy path → add 1–2 features</td><td>"I'm asking for the core loop only, with mock data, so we see something end-to-end in 3 minutes."</td></tr>
+    <tr><td>31–39</td><td>Verify, break it, fix with precise prompts</td><td>"Let me try an empty submit… it crashes. Fix prompt: when the input is empty, disable the button and show a hint."</td></tr>
+    <tr><td>39–45</td><td>Demo the story, metrics, risks, guardrails, next steps</td><td>"Success = % of new users who log 3 entries in week 1. Guardrail = AI suggestion rejection rate. Biggest risk: …"</td></tr>
+  </table></div>
+  <p>Practise this with the <a href="practice.html">built-in timer</a>.</p>
+
+  <h2 id="scripts">Narration phrases that score</h2>
+  <div class="grid two">
+    <div class="card"><h4>Making a decision</h4><p>"I'm choosing X over Y because [user/goal reason]; the trade-off is Z, which is fine for an MVP."</p></div>
+    <div class="card"><h4>Rejecting AI output</h4><p>"This is plausible but generic. It doesn't account for [constraint]. I'll redirect it to…"</p></div>
+    <div class="card"><h4>Checking the work</h4><p>"Before I accept this, let me check the empty case and what happens if the AI call fails."</p></div>
+    <div class="card"><h4>Production thinking</h4><p>"For the prototype the key is in an env var; in production this call goes through our backend with rate limiting and logging."</p></div>
+    <div class="card"><h4>Privacy</h4><p>"This stores mood notes, which are sensitive. I'd keep them per-user with row-level security and not send names to the model."</p></div>
+    <div class="card"><h4>Cutting scope</h4><p>"We have 15 minutes left. I'll drop export and nail the core flow, since that's what proves the hypothesis."</p></div>
+  </div>
+
+  <h2 id="recover">When the AI breaks on screen</h2>
+  <ol>
+    <li><b>Stay calm and narrate.</b> Breakage is an opportunity to show debugging judgement.</li>
+    <li><b>Read the error.</b> Say what you think it means.</li>
+    <li><b>Precise fix prompt:</b> steps to reproduce, expected, actual, error text, "change only what's needed".</li>
+    <li><b>Two strikes rule:</b> if the same fix fails twice, revert to the last working state (git or version history) and re-ask with a smaller scope.</li>
+    <li><b>Fake it honestly:</b> swap the broken integration for mock data, say so, and move on to verify and metrics.</li>
+    <li><b>Context reset:</b> in Claude Code, <code>/clear</code> and restate the spec; in Lovable/Bolt, start the fix in a fresh message with the full context.</li>
+  </ol>
+
+  <h2 id="takehome">Take-home: what gets you the offer</h2>
+  <ul>
+    <li>A <b>README</b> with the problem, the user, the decisions you made and why, what you cut, and how to run it.</li>
+    <li>A short <b>PRD/spec</b> in the repo (use the <a href="sdd.html">spec-driven flow</a>), with metrics and risks.</li>
+    <li>A <b>deployed link</b> (Vercel/Netlify/Lovable) + a 2-minute Loom walkthrough.</li>
+    <li>Evidence of verification: a few tests, a screenshot of the edge cases handled, a security pass.</li>
+    <li>An "If I had another week" section. This is where your product judgement shows most.</li>
+  </ul>
+
+  <h2 id="rubric">Self-scoring rubric</h2>
+  <p>Score yourself after every mock (0 = missed, 1 = partial, 2 = strong). 16+ out of 20 is ready.</p>
+  <div class="widget" id="rubric"></div>
+
+  <h2 id="mistakes">The 10 mistakes that fail candidates</h2>
+  <ol>
+    <li>Thinking you're graded on prompts. You're graded on judgement.</li>
+    <li>Letting the AI choose the user, the problem or the solution.</li>
+    <li>Dumping the whole problem into one giant prompt.</li>
+    <li>Accepting clean-looking output without testing it.</li>
+    <li>Silent building: no narration, or narrating status instead of reasoning.</li>
+    <li>Skipping self-critique and fact-checking of the PRD.</li>
+    <li>Repeating a prompt that's going the wrong way instead of resetting.</li>
+    <li>Building features nobody asked for while the core flow is broken.</li>
+    <li>No metrics, risks or guardrails at the end.</li>
+    <li>Hiding AI use, or not being able to explain why the code path is safe.</li>
+  </ol>
+
+  <h2 id="followups">Follow-up questions to rehearse</h2>
+  <details><summary>How would this scale to 1M users?</summary><p>Move AI calls behind a backend queue for non-interactive work; cache repeated prompts and embeddings; add rate limits per user; use a cheaper model for simple steps and route hard ones to a bigger model; Postgres with read replicas and indexes; CDN for the frontend; observability on latency, error rate and cost per user.</p></details>
+  <details><summary>How do you know the AI part is good enough to launch?</summary><p>Build an eval set (50–200 real or realistic cases with expected outputs), measure task success and failure modes, set a launch bar with stakeholders, run a shadow or limited beta, track user-facing quality signals (thumbs, edits, rejections) and a human-review sample.</p></details>
+  <details><summary>What would engineering push back on?</summary><p>Calling the LLM from the client, no auth, no rate limiting, schema without indexes, unbounded costs, no tests, vendor lock-in, and anything that stores sensitive data without access controls.</p></details>
+  <details><summary>What if the model gives a wrong or harmful answer?</summary><p>Design for being wrong: show confidence or sources, let the user edit or undo, require confirmation for consequential actions, add a human-review path, filter inputs and outputs, log and review incidents, and have a non-AI fallback.</p></details>
+  <details><summary>Why did you choose this tech stack?</summary><p>Speed to a working demo with production-credible defaults: Next.js + Tailwind + shadcn/ui for UI, Supabase for Postgres + auth + row-level security, Vercel for deploys, server-side LLM calls. Easy for engineers to take over.</p></details>
+  <details><summary>How would you measure success?</summary><p>One north-star tied to user value (e.g. weekly active trackers), 2–3 input metrics (activation, retention D7/D30, AI suggestion acceptance), and guardrails (latency, cost per active user, complaint or opt-out rate). Then name the experiment you'd run.</p></details>
+  <details><summary>What did the AI get wrong, and how did you catch it?</summary><p>Have a real example from your mock: an invented API, a missing auth check, a generic metric, an unhandled empty state. Say how you noticed (running it, reading the diff, an edge-case test) and how you fixed it.</p></details>
+
+  <div class="callout tip"><div class="tag">Sources</div><p><a href="https://igotanoffer.com/en/advice/pm-vibe-coding-interview">IGotAnOffer: How to crack the PM vibe coding interview</a> · <a href="https://www.news.aakashg.com/p/vibe-coding-interviews-for-pms-complete">Aakash Gupta: Vibe coding interviews for PMs</a> · <a href="https://underdog.io/blog/vibe-coding-interviews-for-engineers">Underdog: Vibe coding interviews guide</a></p></div>
+
+<script>
+document.addEventListener("vcp:ready", () => {
+  const items = ["Restated the prompt and set a time plan","Asked about goal, users, constraints","Picked ONE segment and ONE pain, with a reason","Proposed the solution myself (not the AI)","Wrote/reviewed a spec with in/out of scope","Reviewed AI output critically out loud","Built a working end-to-end happy path","Tested edge cases and fixed with precise prompts","Defined success + guardrail metrics","Named risks, AI guardrails and next steps"];
+  const key = "vcp-rubric"; const saved = VCP_STORE.get(key, {});
+  const root = document.getElementById("rubric");
+  root.innerHTML = items.map((t, i) => `<div class="score-row"><span>${t}</span><span class="seg" data-i="${i}">${[0,1,2].map(v=>`<button data-v="${v}" class="${saved[i]===v?"on":""}">${v}</button>`).join("")}</span></div>`).join("") + `<div class="result" id="rtotal"></div><button class="btn" id="rclear" style="margin-top:10px">Clear scores</button>`;
+  function total(){ const s = VCP_STORE.get(key, {}); const t = Object.values(s).reduce((a,b)=>a+b,0); document.getElementById("rtotal").innerHTML = `<b>Score: ${t} / 20.</b> ${t>=16?"Interview-ready. Keep doing one mock a day.":t>=11?"Close. Look at your 0s and drill those steps.":"Keep practising: run the 45-minute drill on the Practice page."}`; }
+  root.querySelectorAll(".seg").forEach(seg => seg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    const s = VCP_STORE.get(key, {}); s[seg.dataset.i] = +b.dataset.v; VCP_STORE.set(key, s);
+    seg.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); total();
+  })));
+  document.getElementById("rclear").addEventListener("click", () => { VCP_STORE.set(key, {}); root.querySelectorAll(".seg button").forEach(b=>b.classList.remove("on")); total(); });
+  total();
+});
+</script>
+</main>
+</body>
+</html>
