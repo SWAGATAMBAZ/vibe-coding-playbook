@@ -15,6 +15,16 @@ Master vibe coding with Claude Code as an AI PM: clear vibe coding interviews an
 | Solutions | Fully worked AI personalization tracker · 18 blueprints by industry |
 | Reference | One-page cheat sheet and sources |
 
+## One-file setup (any laptop)
+
+In your project folder's terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SWAGATAMBAZ/vibe-coding-playbook/main/SETUP.md -o SETUP.md
+```
+
+Then tell Claude Code: `Follow @SETUP.md with the core profile`. Profiles: `core`, `interview`, `ai`, `full`. It also installs itself as `/setup-vibe-stack`, so later projects on the same computer only need `/setup-vibe-stack core`.
+
 ## Starter kit
 
 [`starter-kit/`](starter-kit/) holds files to copy into any project: a `CLAUDE.md` template, 7 custom commands (`/kickoff`, `/slice`, `/verify`, `/ship`, `/demo`, `/metrics`, `/handoff`), 3 hooks (block dangerous commands, auto-format, tests must pass), a reviewer subagent, a shared `.mcp.json` and `install.sh`.

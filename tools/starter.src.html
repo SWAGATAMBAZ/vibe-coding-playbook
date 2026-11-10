@@ -18,6 +18,19 @@
   </script>
   <div class="toc" data-auto></div>
 
+  <h2 id="setup-md">One-file setup on any laptop</h2>
+  <p><a href="https://github.com/SWAGATAMBAZ/vibe-coding-playbook/blob/main/SETUP.md"><code>SETUP.md</code></a> is written for Claude Code to carry out. Claude checks the laptop, copies this starter kit, and installs the plugins, skills and connectors for the profile you choose (<b>core</b>, <b>interview</b>, <b>ai</b> or <b>full</b>). It merges with your existing files instead of overwriting them, then reports what it installed. It also saves itself as a personal <code>/setup-vibe-stack</code> command, so on that computer every later project is one command.</p>
+  <script type="text/plain" class="snippet" data-lang="bash" data-title="first time on a laptop · in the project's terminal (VS Code: Ctrl + `)">
+    curl -fsSL https://raw.githubusercontent.com/SWAGATAMBAZ/vibe-coding-playbook/main/SETUP.md -o SETUP.md
+  </script>
+  <script type="text/plain" class="snippet" data-lang="text" data-title="then, in the Claude panel or a claude session">
+    Follow @SETUP.md with the core profile
+
+    # every later project on the same computer:
+    /setup-vibe-stack core
+  </script>
+  <p>Afterwards: reload the window, run <code>/mcp</code> to log in to the connectors, and type <code>/</code> to see your commands. Claude asks before installing system software (Node, Git, Python, uv) and never uses <code>sudo</code> on its own.</p>
+
   <h2 id="flow">The command flow</h2>
   <div class="flow">
     <div class="node hl">/kickoff<small>clarify → spec.md → tasks.md</small></div><span class="arrow">→</span>
