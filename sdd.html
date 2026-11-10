@@ -36,42 +36,42 @@
 
   <h2 id="speckit">GitHub Spec Kit with Claude Code</h2>
   <script type="text/plain" class="snippet" data-lang="bash" data-title="setup (needs Python 3.11+ and uv)">
-    uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
-    specify init my-app --ai claude        # or, inside an existing repo:  specify init . --ai claude
-    cd my-app && claude                    # the /speckit.* commands are now available
+    uv tool install specify-cli
+    specify init my-app --integration claude   # existing repo:  specify init --here --integration claude --force
+    cd my-app && claude                    # the /speckit-* skills are now available
   </script>
   <div class="table-wrap"><table>
     <tr><th>Command</th><th>You give it</th><th>It writes</th><th>Your review question</th></tr>
-    <tr><td><code>/speckit.constitution</code></td><td>Principles: quality, testing, UX, performance, privacy</td><td><code>.specify/memory/constitution.md</code></td><td>Would I reject a PR that broke these?</td></tr>
-    <tr><td><code>/speckit.specify</code></td><td>The feature in product language, no stack</td><td><code>specs/001-x/spec.md</code> + a feature branch</td><td>Are the user, stories and acceptance criteria right? What's out of scope?</td></tr>
-    <tr><td><code>/speckit.clarify</code></td><td>(nothing: it asks you)</td><td>Answers merged into the spec</td><td>Did it surface the questions an engineer would ask?</td></tr>
-    <tr><td><code>/speckit.plan</code></td><td>Your stack and constraints</td><td><code>plan.md</code>, <code>research.md</code>, <code>data-model.md</code>, <code>contracts/</code>, <code>quickstart.md</code></td><td>Is this the simplest architecture that meets the spec?</td></tr>
-    <tr><td><code>/speckit.tasks</code></td><td>(reads the plan)</td><td><code>tasks.md</code> with ordered, parallelisable tasks</td><td>Is each task small and testable? Is the order right?</td></tr>
-    <tr><td><code>/speckit.analyze</code></td><td>—</td><td>Cross-artifact consistency report</td><td>Any requirement with no task, or task with no requirement?</td></tr>
-    <tr><td><code>/speckit.checklist</code></td><td>A quality area (UX, security…)</td><td>A checklist to validate requirements</td><td>Are the requirements themselves complete and testable?</td></tr>
-    <tr><td><code>/speckit.implement</code></td><td>—</td><td>Code, task by task</td><td>Do tests pass? Does it meet each acceptance criterion?</td></tr>
+    <tr><td><code>/speckit-constitution</code></td><td>Principles: quality, testing, UX, performance, privacy</td><td><code>.specify/memory/constitution.md</code></td><td>Would I reject a PR that broke these?</td></tr>
+    <tr><td><code>/speckit-specify</code></td><td>The feature in product language, no stack</td><td><code>specs/001-x/spec.md</code> + a feature branch</td><td>Are the user, stories and acceptance criteria right? What's out of scope?</td></tr>
+    <tr><td><code>/speckit-clarify</code></td><td>(nothing: it asks you)</td><td>Answers merged into the spec</td><td>Did it surface the questions an engineer would ask?</td></tr>
+    <tr><td><code>/speckit-plan</code></td><td>Your stack and constraints</td><td><code>plan.md</code>, <code>research.md</code>, <code>data-model.md</code>, <code>contracts/</code>, <code>quickstart.md</code></td><td>Is this the simplest architecture that meets the spec?</td></tr>
+    <tr><td><code>/speckit-tasks</code></td><td>(reads the plan)</td><td><code>tasks.md</code> with ordered, parallelisable tasks</td><td>Is each task small and testable? Is the order right?</td></tr>
+    <tr><td><code>/speckit-analyze</code></td><td>—</td><td>Cross-artifact consistency report</td><td>Any requirement with no task, or task with no requirement?</td></tr>
+    <tr><td><code>/speckit-checklist</code></td><td>A quality area (UX, security…)</td><td>A checklist to validate requirements</td><td>Are the requirements themselves complete and testable?</td></tr>
+    <tr><td><code>/speckit-implement</code></td><td>—</td><td>Code, task by task</td><td>Do tests pass? Does it meet each acceptance criterion?</td></tr>
   </table></div>
 
   <h2 id="example">Example: what you'd type</h2>
   <script type="text/plain" class="snippet" data-lang="text" data-title="inside Claude Code">
-    /speckit.constitution Mobile-first, accessible (WCAG AA). Every feature ships with tests for its
+    /speckit-constitution Mobile-first, accessible (WCAG AA). Every feature ships with tests for its
     acceptance criteria. User data is private by default: row-level security on every table, no PII
     sent to LLMs. Prefer boring, well-documented libraries. p95 page load under 2s.
 
-    /speckit.specify Build "Nudge", an AI personalization tracker. A user logs daily check-ins (mood 1–5,
+    /speckit-specify Build "Nudge", an AI personalization tracker. A user logs daily check-ins (mood 1–5,
     energy 1–5, sleep hours, a free-text note, and which habits they did). After 7 check-ins the app shows
     one personalised micro-suggestion per day, with a one-line "why" based on their own patterns, and lets
     them accept, snooze or dismiss it. Out of scope for v1: social features, wearables, notifications.
 
-    /speckit.clarify
+    /speckit-clarify
 
-    /speckit.plan Next.js App Router + TypeScript + Tailwind + shadcn/ui. Supabase for Postgres, auth and
+    /speckit-plan Next.js App Router + TypeScript + Tailwind + shadcn/ui. Supabase for Postgres, auth and
     RLS. Suggestions generated server-side with the Claude API, structured JSON validated with zod,
     cached per user per day. Deploy on Vercel.
 
-    /speckit.tasks
-    /speckit.analyze
-    /speckit.implement
+    /speckit-tasks
+    /speckit-analyze
+    /speckit-implement
   </script>
   <p>The full worked version of this product is on the <a href="personalization.html">personalization tracker</a> page.</p>
 
@@ -121,7 +121,7 @@
     <tr><td>Open questions log</td><td>clarify step</td></tr>
     <tr><td>Tech design doc (from eng)</td><td>plan.md, data-model.md, contracts/</td></tr>
     <tr><td>Jira epics & tickets</td><td>tasks.md (push to Linear/Jira via MCP)</td></tr>
-    <tr><td>QA test plan</td><td>acceptance criteria → tests; /speckit.checklist</td></tr>
+    <tr><td>QA test plan</td><td>acceptance criteria → tests; /speckit-checklist</td></tr>
   </table></div>
   <div class="callout tip"><div class="tag">Sources</div><p><a href="https://github.com/github/spec-kit">github/spec-kit</a> and its <a href="https://github.com/github/spec-kit/blob/main/spec-driven.md">spec-driven.md</a> · <a href="https://github.com/obra/superpowers">obra/superpowers</a> · <a href="https://developertoolkit.ai/en/ecosystem/plugins/anthropic-dev-plugins/">feature-dev plugin overview</a></p></div>
 </main>

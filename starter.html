@@ -39,7 +39,7 @@
     <div class="node">/ship<small>review + security + PR</small></div><span class="arrow">→</span>
     <div class="node hl">/demo<small>script, metrics, risks</small></div>
   </div>
-  <p>Plus <code>/metrics</code> to instrument success and <code>/handoff</code> before you <code>/clear</code>. Each command orchestrates skills you already installed (grill-me style questioning, TDD, Playwright, code review) rather than duplicating them. If you use Spec Kit instead, swap <code>/kickoff</code> for the <code>/speckit.*</code> commands and keep the rest.</p>
+  <p>Plus <code>/metrics</code> to instrument success and <code>/handoff</code> before you <code>/clear</code>. Each command orchestrates skills you already installed (grill-me style questioning, TDD, Playwright, code review) rather than duplicating them. If you use Spec Kit instead, swap <code>/kickoff</code> for the <code>/speckit-*</code> commands and keep the rest.</p>
   <div class="table-wrap"><table>
     <tr><th>Kind</th><th>Where it lives</th><th>How it runs</th></tr>
     <tr><td>Custom command</td><td><code>.claude/commands/name.md</code> (team) or <code>~/.claude/commands/</code> (you)</td><td>You type <code>/name args</code>; <code>$ARGUMENTS</code> is replaced. Frontmatter sets description and argument hint.</td></tr>
@@ -256,8 +256,14 @@ Under 60 lines. Then tell me: "Run /clear, then say: read HANDOFF.md and continu
 #!/usr/bin/env bash
 # PreToolUse hook (matcher: Bash). Blocks destructive or secret-leaking shell commands.
 # Exit code 2 = block the tool call; stderr is shown to Claude so it can choose another approach.
+# Works with python3, python (Windows), or no Python at all.
 input="$(cat)"
-cmd="$(printf '%s' "$input" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null)"
+py="$(command -v python3 || command -v python || true)"
+if [ -n "$py" ]; then
+  cmd="$(printf '%s' "$input" | "$py" -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null)"
+else
+  cmd="$(printf '%s' "$input" | grep -o '"command" *: *"[^"]*' | head -1 | sed 's/^"command" *: *"//')"
+fi
 
 block() { echo "Blocked by .claude/hooks/block-dangerous.sh: $1. Ask the user to run it themselves if it is really needed." >&2; exit 2; }
 
@@ -267,7 +273,7 @@ case "$cmd" in
   *"git reset --hard"*|*"git clean -fd"*)             block "discards uncommitted work" ;;
   *"git push"*" main"*|*"git push"*" master"*)        block "direct push to main; open a PR instead" ;;
   *"DROP TABLE"*|*"drop table"*|*"TRUNCATE"*)         block "destructive SQL" ;;
-  *"cat .env"*|*"printenv"*|*"echo \$"*KEY*)           block "could print secrets into the transcript" ;;
+  *"cat .env"*|*"printenv"*)                          block "could print secrets into the transcript" ;;
   *"curl"*"| bash"*|*"curl"*"| sh"*)                  block "piping a remote script into a shell" ;;
 esac
 exit 0
@@ -276,8 +282,13 @@ exit 0
 #!/usr/bin/env bash
 # PostToolUse hook (matcher: Edit|Write). Formats the file Claude just changed. Never blocks.
 input="$(cat)"
-file="$(printf '%s' "$input" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("file_path",""))' 2>/dev/null)"
-[ -z "$file" ] || [ ! -f "$file" ] && exit 0
+py="$(command -v python3 || command -v python || true)"
+if [ -n "$py" ]; then
+  file="$(printf '%s' "$input" | "$py" -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("file_path",""))' 2>/dev/null)"
+else
+  file="$(printf '%s' "$input" | grep -o '"file_path" *: *"[^"]*' | head -1 | sed 's/^"file_path" *: *"//')"
+fi
+{ [ -z "$file" ] || [ ! -f "$file" ]; } && exit 0
 
 case "$file" in
   *.ts|*.tsx|*.js|*.jsx|*.json|*.css|*.md|*.html)
@@ -292,8 +303,7 @@ exit 0
 # Stop hook. If code changed and a test script exists, run tests before Claude may finish.
 # Exit 2 = Claude must keep working; stderr tells it why. stop_hook_active prevents infinite loops.
 input="$(cat)"
-active="$(printf '%s' "$input" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("stop_hook_active",False))' 2>/dev/null)"
-[ "$active" = "True" ] && exit 0
+printf '%s' "$input" | grep -q '"stop_hook_active" *: *true' && exit 0   # no Python needed
 
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 git diff --quiet HEAD -- . 2>/dev/null && exit 0          # nothing changed: nothing to check
@@ -354,11 +364,11 @@ claude plugin install code-review@claude-plugins-official
 claude plugin install security-guidance@claude-plugins-official
 
 echo "── Skills (one per task)"
-npx -y skills add mattpocock/skills --skill grill-me --agent claude-code
-npx -y skills add deanpeters/Product-Manager-Skills --skill prd-development --agent claude-code
-npx -y skills add vercel-labs/agent-skills --skill web-design-guidelines --agent claude-code
-npx -y skills add obra/superpowers --skill test-driven-development --agent claude-code
-npx -y skills add obra/superpowers --skill systematic-debugging --agent claude-code
+npx -y skills@latest add mattpocock/skills --skill grill-me -a claude-code --yes
+npx -y skills@latest add deanpeters/Product-Manager-Skills --skill prd-development -a claude-code --yes
+npx -y skills@latest add vercel-labs/agent-skills --skill web-design-guidelines -a claude-code --yes
+npx -y skills@latest add obra/superpowers --skill test-driven-development -a claude-code --yes
+npx -y skills@latest add obra/superpowers --skill systematic-debugging -a claude-code --yes
 
 echo "── Connectors"
 claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp || true
@@ -367,8 +377,8 @@ claude mcp add --scope project --transport http supabase https://mcp.supabase.co
 
 echo "── Spec Kit (spec-driven development)"
 if command -v uv >/dev/null; then
-  uv tool install specify-cli --from git+https://github.com/github/spec-kit.git || true
-  echo "Run: specify init . --ai claude"
+  uv tool install specify-cli || true
+  echo "Run: specify init --here --integration claude --force   (if specify is not found: uv tool update-shell, then reopen the terminal)"
 else
   echo "Install uv (https://docs.astral.sh/uv/) to use Spec Kit, or use the SDD-lite commands in .claude/commands."
 fi

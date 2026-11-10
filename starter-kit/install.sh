@@ -13,11 +13,11 @@ claude plugin install code-review@claude-plugins-official
 claude plugin install security-guidance@claude-plugins-official
 
 echo "── Skills (one per task)"
-npx -y skills add mattpocock/skills --skill grill-me --agent claude-code
-npx -y skills add deanpeters/Product-Manager-Skills --skill prd-development --agent claude-code
-npx -y skills add vercel-labs/agent-skills --skill web-design-guidelines --agent claude-code
-npx -y skills add obra/superpowers --skill test-driven-development --agent claude-code
-npx -y skills add obra/superpowers --skill systematic-debugging --agent claude-code
+npx -y skills@latest add mattpocock/skills --skill grill-me -a claude-code --yes
+npx -y skills@latest add deanpeters/Product-Manager-Skills --skill prd-development -a claude-code --yes
+npx -y skills@latest add vercel-labs/agent-skills --skill web-design-guidelines -a claude-code --yes
+npx -y skills@latest add obra/superpowers --skill test-driven-development -a claude-code --yes
+npx -y skills@latest add obra/superpowers --skill systematic-debugging -a claude-code --yes
 
 echo "── Connectors"
 claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp || true
@@ -26,8 +26,8 @@ claude mcp add --scope project --transport http supabase https://mcp.supabase.co
 
 echo "── Spec Kit (spec-driven development)"
 if command -v uv >/dev/null; then
-  uv tool install specify-cli --from git+https://github.com/github/spec-kit.git || true
-  echo "Run: specify init . --ai claude"
+  uv tool install specify-cli || true
+  echo "Run: specify init --here --integration claude --force   (if specify is not found: uv tool update-shell, then reopen the terminal)"
 else
   echo "Install uv (https://docs.astral.sh/uv/) to use Spec Kit, or use the SDD-lite commands in .claude/commands."
 fi

@@ -39,7 +39,7 @@
     <div class="node">/ship<small>review + security + PR</small></div><span class="arrow">→</span>
     <div class="node hl">/demo<small>script, metrics, risks</small></div>
   </div>
-  <p>Plus <code>/metrics</code> to instrument success and <code>/handoff</code> before you <code>/clear</code>. Each command orchestrates skills you already installed (grill-me style questioning, TDD, Playwright, code review) rather than duplicating them. If you use Spec Kit instead, swap <code>/kickoff</code> for the <code>/speckit.*</code> commands and keep the rest.</p>
+  <p>Plus <code>/metrics</code> to instrument success and <code>/handoff</code> before you <code>/clear</code>. Each command orchestrates skills you already installed (grill-me style questioning, TDD, Playwright, code review) rather than duplicating them. If you use Spec Kit instead, swap <code>/kickoff</code> for the <code>/speckit-*</code> commands and keep the rest.</p>
   <div class="table-wrap"><table>
     <tr><th>Kind</th><th>Where it lives</th><th>How it runs</th></tr>
     <tr><td>Custom command</td><td><code>.claude/commands/name.md</code> (team) or <code>~/.claude/commands/</code> (you)</td><td>You type <code>/name args</code>; <code>$ARGUMENTS</code> is replaced. Frontmatter sets description and argument hint.</td></tr>

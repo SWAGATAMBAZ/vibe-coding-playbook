@@ -61,7 +61,7 @@
     # n8n-mcp knows n8n's node catalog and templates; add your instance URL + API key to manage workflows
     claude mcp add n8n-mcp -e MCP_MODE=stdio -e LOG_LEVEL=error \
       -e N8N_API_URL=https://your-n8n.example.com -e N8N_API_KEY=$N8N_API_KEY -- npx n8n-mcp
-    claude plugin marketplace add czlonkowski/n8n-skills   # then install n8n-mcp-skills from /plugin
+    claude plugin marketplace add czlonkowski/n8n-skills && claude plugin install n8n-mcp-skills@n8n-mcp-skills
   </script>
   <script type="text/plain" class="snippet" data-lang="text" data-title="prompt">
     Build an n8n workflow: Gmail trigger on new support emails → AI Agent (Claude) classifies into
@@ -162,7 +162,7 @@
     which must interrupt for human approval. Persist threads with the Postgres checkpointer.
     Add: max 8 steps, 20s timeout per tool, structured JSON final answer {category, answer, sources, escalate}.
     Write 10 eval cases in tests/evals.yaml and a script that reports task success and avg steps.
-    Start with /speckit.specify, then plan and tasks; implement test-first.
+    Start with /speckit-specify, then plan and tasks; implement test-first.
   </script>
   <div class="callout tip"><div class="tag">Sources</div><p><a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic: Building effective agents</a> · <a href="https://langchain-ai.github.io/langgraph/">LangGraph docs</a> · <a href="https://blog.langchain.com/langchain-skills">LangChain Skills</a> · <a href="https://github.com/czlonkowski/n8n-mcp">n8n-mcp</a> · <a href="https://metavert.io/compare/langgraph-vs-n8n">LangGraph vs n8n</a> · <a href="https://www.betterclaw.io/blog/claude-agent-sdk-vs-langgraph">Claude Agent SDK vs LangGraph</a></p></div>
 </main>
